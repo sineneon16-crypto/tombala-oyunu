@@ -215,6 +215,56 @@
             .count-badge { font-size: 9px; }
             .status-msg { font-size: 9px; padding: 4px 8px; max-width: 95%; }
         }
+        /* Kart Dağılma ve Alan Oyuncuya Uçma Animasyonları */
+        @keyframes dealCardAnim {
+            0% { opacity: 0; transform: translateY(-90px) scale(0.4) rotate(-12deg); }
+            100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+        }
+        .card-deal-anim {
+            animation: dealCardAnim 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        }
+        .flying-pile-card {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            transition: transform 0.85s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.85s ease-in;
+        }
+        function animateCaptureToPlayer(winnerIdx, myIdx, mode, lastCard) {
+    const pileEl = document.getElementById('pileBox');
+    if (!pileEl) return;
+    const rect = pileEl.getBoundingClientRect();
+
+    let targetId = 'tagBottom';
+    if (mode === 'solo') {
+        targetId = (winnerIdx === myIdx) ? 'tagBottom' : 'tagTop';
+    } else {
+        const diff = (winnerIdx - myIdx + 4) % 4;
+        if (diff === 1) targetId = 'tagRight';
+        else if (diff === 2) targetId = 'tagTop';
+        else if (diff === 3) targetId = 'tagLeft';
+    }
+
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl) return;
+    const tRect = targetEl.getBoundingClientRect();
+
+    const flyCard = document.createElement('div');
+    flyCard.className = 'flying-pile-card';
+    flyCard.style.left = rect.left + 'px';
+    flyCard.style.top = rect.top + 'px';
+    flyCard.innerHTML = lastCard ? renderCard(lastCard, false, 0) : '<div class="card-back"></div>';
+    document.body.appendChild(flyCard);
+
+    const dx = (tRect.left + tRect.width / 2) - (rect.left + rect.width / 2);
+    const dy = (tRect.top + tRect.height / 2) - (rect.top + rect.height / 2);
+
+    requestAnimationFrame(() => {
+        flyCard.style.transform = `translate(${dx}px, ${dy}px) scale(0.35) rotate(18deg)`;
+        flyCard.style.opacity = '0';
+    });
+
+    setTimeout(() => { flyCard.remove(); }, 900);
+}      
     </style>
 </head>
 <body>
@@ -379,6 +429,9 @@ socket.on('pistiRoomsList', (rooms) => {
 
         socket.on('pistiState', (state) => {
             document.getElementById('lobbyOverlay').style.display = 'none';
+                        if (state.eventInfo && state.eventInfo.type === 'capture') {
+                animateCaptureToPlayer(state.eventInfo.byIndex, state.myIndex, state.mode, state.eventInfo.card);
+            }
             document.getElementById('endOverlay').style.display = 'none';
             mySeatIndex = state.myIndex;
             const isMyTurn = (state.turnIndex === mySeatIndex);
@@ -391,7 +444,14 @@ socket.on('pistiRoomsList', (rooms) => {
             document.getElementById('statusMsg').innerText = state.message;
 
             document.getElementById('pileBox').innerHTML = state.topCard ? renderCard(state.topCard, false, 0) : '';
-            document.getElementById('handBottom').innerHTML = state.myHand.map((c, i) => renderCard(c, isMyTurn, i)).join('');
+            const isDeal = (state.eventInfo && state.eventInfo.type === 'deal');
+document.getElementById('handBottom').innerHTML = state.myHand.map((c, i) => {
+    let html = renderCard(c, isMyTurn, i);
+    if (isDeal) {
+        html = html.replace('class="card ', `style="animation-delay:${i * 0.12}s" class="card card-deal-anim `);
+    }
+    return html;
+}).join('');
 
             const me = state.players[mySeatIndex];
             const tagBottom = document.getElementById('tagBottom');
