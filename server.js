@@ -435,15 +435,15 @@ function getPistiRoom(mode, target) {
     if (!pistiRooms[key]) {
         pistiRooms[key] = {
             key: key,
-            mode: mode, // 'solo' (2 kişi) veya 'team' (4 kişi)
+            mode: mode,
             target: parseInt(target) || 101,
             maxPlayers: mode === 'solo' ? 2 : 4,
-            players: [],
-            deck: [],
-            pile: [],
-            captured: [[], [], [], []],
-            roundPisti:,
-            totalScores:, // solo: [P1, P2] | team: [Takım1(0-2), Takım2(1-3)]
+            players: new Array(),
+            deck: new Array(),
+            pile: new Array(),
+            captured: Array.of(new Array(), new Array(), new Array(), new Array()),
+            roundPisti: Array.of(0, 0, 0, 0),
+            totalScores: Array.of(0, 0),
             turnIndex: 0,
             lastCapturer: 0,
             active: false
@@ -453,15 +453,17 @@ function getPistiRoom(mode, target) {
 }
 
 function createPistiDeck() {
-    const suits = ['♠', '♥', '♦', '♣'];
-    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    let d = [];
+    const suits = Array.of('♠', '♥', '♦', '♣');
+    const values = Array.of('A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K');
+    let d = new Array();
     for (let s of suits) {
         for (let v of values) d.push({ suit: s, value: v, isRed: (s === '♥' || s === '♦') });
     }
     for (let i = d.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [d[i], d[j]] = [d[j], d[i]];
+        let temp = d.at(i);
+        d.splice(i, 1, d.at(j));
+        d.splice(j, 1, temp);
     }
     return d;
 }
@@ -489,9 +491,9 @@ function broadcastPistiState(room, msg = "") {
 
 function startPistiRound(room) {
     room.deck = createPistiDeck();
-    room.pile = [];
-    room.captured = [[], [], [], []];
-    room.roundPisti =;
+    room.pile = new Array();
+    room.captured = Array.of(new Array(), new Array(), new Array(), new Array());
+    room.roundPisti = Array.of(0, 0, 0, 0);
     room.turnIndex = 0;
     room.lastCapturer = 0;
     room.active = true;
@@ -510,13 +512,13 @@ function dealPistiCards(room) {
             if (room.deck.length > 0) p.hand.push(room.deck.pop());
         });
     }
-    broadcastPistiState(room, `Hedef: ${room.target} Puan | Sıra: ${room.players[room.turnIndex].name}`);
+    broadcastPistiState(room, `Hedef: ${room.target} Puan | Sıra: ${room.players.at(room.turnIndex).name}`);
     checkPistiBotTurn(room);
 }
 
 function processPistiMove(room, playerIdx, cardIdx) {
     if (!room.active || room.turnIndex !== playerIdx) return;
-    let p = room.players[playerIdx];
+    let p = room.players.at(playerIdx);
     if (!p || cardIdx < 0 || cardIdx >= p.hand.length) return;
 
     let playedCard = p.hand.splice(cardIdx, 1).at(0);
@@ -530,10 +532,13 @@ function processPistiMove(room, playerIdx, cardIdx) {
         if (isMatch || isJack) {
             let isPisti = (room.pile.length === 1 && isMatch);
             room.pile.push(playedCard);
-            room.captured[playerIdx].push(...room.pile);
-            if (isPisti) room.roundPisti[playerIdx] += (isJack ? 20 : 10);
+            room.captured.at(playerIdx).push(...room.pile);
+            if (isPisti) {
+                let currentPisti = room.roundPisti.at(playerIdx) + (isJack ? 20 : 10);
+                room.roundPisti.splice(playerIdx, 1, currentPisti);
+            }
             room.lastCapturer = playerIdx;
-            room.pile = [];
+            room.pile = new Array();
             actionText = isPisti ? `🔥 ${p.name} PİŞTİ YAPTI!` : `✨ ${p.name} yerdeki kartları topladı!`;
         } else {
             room.pile.push(playedCard);
@@ -549,13 +554,13 @@ function processPistiMove(room, playerIdx, cardIdx) {
         broadcastPistiState(room, actionText);
         setTimeout(() => { dealPistiCards(room); }, 1600);
     } else {
-        broadcastPistiState(room, `${actionText} | Sıra: ${room.players[room.turnIndex].name}`);
+        broadcastPistiState(room, `${actionText} | Sıra: ${room.players.at(room.turnIndex).name}`);
         checkPistiBotTurn(room);
     }
 }
 function checkPistiBotTurn(room) {
     if (!room.active) return;
-    let currentPlayer = room.players[room.turnIndex];
+    let currentPlayer = room.players.at(room.turnIndex);
     if (currentPlayer && currentPlayer.isBot) {
         setTimeout(() => {
             if (!room.active) return;
@@ -586,39 +591,39 @@ function calcCardsPoints(cards, pistiPts) {
 
 function finishPistiRound(room) {
     if (room.pile.length > 0) {
-        room.captured[room.lastCapturer].push(...room.pile);
-        room.pile = [];
+        room.captured.at(room.lastCapturer).push(...room.pile);
+        room.pile = new Array();
     }
 
-    let roundPts =;
-    let cardCounts =;
+    let p1Pts = 0, p2Pts = 0, c1Count = 0, c2Count = 0;
 
     if (room.mode === 'solo') {
-        roundPts[0] = calcCardsPoints(room.captured[0], room.roundPisti[0]);
-        roundPts[1] = calcCardsPoints(room.captured[1], room.roundPisti[1]);
-        cardCounts[0] = room.captured[0].length;
-        cardCounts[1] = room.captured[1].length;
+        p1Pts = calcCardsPoints(room.captured.at(0), room.roundPisti.at(0));
+        p2Pts = calcCardsPoints(room.captured.at(1), room.roundPisti.at(1));
+        c1Count = room.captured.at(0).length;
+        c2Count = room.captured.at(1).length;
     } else {
-        let t1Cards = [...room.captured[0], ...room.captured[2]];
-        let t2Cards = [...room.captured[1], ...room.captured[3]];
-        roundPts[0] = calcCardsPoints(t1Cards, room.roundPisti[0] + room.roundPisti[2]);
-        roundPts[1] = calcCardsPoints(t2Cards, room.roundPisti[1] + room.roundPisti[3]);
-        cardCounts[0] = t1Cards.length;
-        cardCounts[1] = t2Cards.length;
+        let t1Cards = room.captured.at(0).concat(room.captured.at(2));
+        let t2Cards = room.captured.at(1).concat(room.captured.at(3));
+        p1Pts = calcCardsPoints(t1Cards, room.roundPisti.at(0) + room.roundPisti.at(2));
+        p2Pts = calcCardsPoints(t2Cards, room.roundPisti.at(1) + room.roundPisti.at(3));
+        c1Count = t1Cards.length;
+        c2Count = t2Cards.length;
     }
 
-    if (cardCounts[0] > cardCounts[1]) roundPts[0] += 3;
-    else if (cardCounts[1] > cardCounts[0]) roundPts[1] += 3;
+    if (c1Count > c2Count) p1Pts += 3;
+    else if (c2Count > c1Count) p2Pts += 3;
 
-    room.totalScores[0] += roundPts[0];
-    room.totalScores[1] += roundPts[1];
+    let newTotal1 = room.totalScores.at(0) + p1Pts;
+    let newTotal2 = room.totalScores.at(1) + p2Pts;
+    room.totalScores = Array.of(newTotal1, newTotal2);
 
-    let reachedTarget = (room.totalScores[0] >= room.target || room.totalScores[1] >= room.target);
-    let isTieAtTop = (reachedTarget && room.totalScores[0] === room.totalScores[1]);
+    let reachedTarget = (newTotal1 >= room.target || newTotal2 >= room.target);
+    let isTieAtTop = (reachedTarget && newTotal1 === newTotal2);
 
     if (reachedTarget && !isTieAtTop) {
         room.active = false;
-        let winnerSide = room.totalScores[0] > room.totalScores[1] ? 1 : 2;
+        let winnerSide = newTotal1 > newTotal2 ? 1 : 2;
         io.to(room.key).emit('pistiMatchOver', {
             mode: room.mode,
             target: room.target,
@@ -626,11 +631,11 @@ function finishPistiRound(room) {
             winnerSide: winnerSide,
             players: room.players.map(p => p.name)
         });
-        room.players = [];
-        room.totalScores =;
+        room.players = new Array();
+        room.totalScores = Array.of(0, 0);
     } else {
         io.to(room.key).emit('pistiRoundSummary', {
-            roundPts: roundPts,
+            roundPts: Array.of(p1Pts, p2Pts),
             totalScores: room.totalScores,
             target: room.target
         });
@@ -641,7 +646,8 @@ function finishPistiRound(room) {
 io.on('connection', (socket) => {
     socket.on('joinPisti', (data) => {
         let mode = (data && data.mode === 'solo') ? 'solo' : 'team';
-        let target = [51, 101, 151].includes(parseInt(data.target)) ? parseInt(data.target) : 101;
+        let parsedTarget = data ? parseInt(data.target) : 101;
+        let target = Array.of(51, 101, 151).includes(parsedTarget) ? parsedTarget : 101;
         let room = getPistiRoom(mode, target);
 
         if (room.active) {
@@ -655,7 +661,7 @@ io.on('connection', (socket) => {
         let exists = room.players.find(p => p.id === socket.id);
         if (!exists && room.players.length < room.maxPlayers) {
             let pName = (data && data.name) ? String(data.name).substring(0, 14) : ("Oyuncu_" + socket.id.substring(0, 3));
-            room.players.push({ id: socket.id, name: pName, isBot: false, hand: [] });
+            room.players.push({ id: socket.id, name: pName, isBot: false, hand: new Array() });
         }
 
         io.to(room.key).emit('pistiLobbyUpdate', {
@@ -675,7 +681,7 @@ io.on('connection', (socket) => {
         if (!room || room.active || room.players.length === 0) return;
         let botNum = 1;
         while (room.players.length < room.maxPlayers) {
-            room.players.push({ id: "bot_" + botNum, name: "Bot_" + botNum, isBot: true, hand: [] });
+            room.players.push({ id: "bot_" + botNum, name: "Bot_" + botNum, isBot: true, hand: new Array() });
             botNum++;
         }
         startPistiRound(room);
@@ -696,8 +702,8 @@ io.on('connection', (socket) => {
         let idx = room.players.findIndex(p => p.id === socket.id);
         if (idx !== -1) {
             if (room.active) {
-                room.players[idx].isBot = true;
-                room.players[idx].name += " (Bot)";
+                room.players.at(idx).isBot = true;
+                room.players.at(idx).name += " (Bot)";
                 checkPistiBotTurn(room);
             } else {
                 room.players.splice(idx, 1);
