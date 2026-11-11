@@ -14,6 +14,10 @@ if (fs.existsSync(IP_DB_FILE)) {
     try { ipWallets = JSON.parse(fs.readFileSync(IP_DB_FILE, 'utf8')); } catch (e) { ipWallets = {}; }
 }
 
+app.get('/tombala', (req, res) => {
+    res.sendFile(path.join(__dirname, 'tombala.html'));
+});
+
 function saveIpWallets() {
     try { fs.writeFileSync(IP_DB_FILE, JSON.stringify(ipWallets, null, 2)); } catch (e) {}
 }
