@@ -425,6 +425,232 @@ function processRoundClaims(fee) {
     room.currentRoundWinners = [];
 }
 
+// ==========================================
+// 🃏 4 KİŞİLİK CANLI PİŞTİ SUNUCU SİSTEMİ
+// ==========================================
+let pistiRoom = {
+    players: [], // { id, name, isBot, hand: [] }
+    deck: [],
+    pile: [],
+    team1Captured: [],
+    team2Captured: [],
+    team1Pisti: 0,
+    team2Pisti: 0,
+    turnIndex: 0,
+    lastCapturerTeam: 0,
+    active: false
+};
+
+function createPistiDeck() {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    let d = [];
+    for (let s of suits) {
+        for (let v of values) d.push({ suit: s, value: v, isRed: (s === '♥' || s === '♦') });
+    }
+    for (let i = d.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [d[i], d[j]] = [d[j], d[i]];
+    }
+    return d;
+}
+
+function broadcastPistiState(msg = "") {
+    pistiRoom.players.forEach((p, idx) => {
+        if (!p.isBot) {
+            io.to(p.id).emit('pistiState', {
+                active: pistiRoom.active,
+                myIndex: idx,
+                players: pistiRoom.players.map(pl => ({ name: pl.name, isBot: pl.isBot, cardCount: pl.hand.length })),
+                myHand: p.hand,
+                topCard: pistiRoom.pile.length > 0 ? pistiRoom.pile.at(-1) : null,
+                pileCount: pistiRoom.pile.length,
+                deckCount: pistiRoom.deck.length,
+                turnIndex: pistiRoom.turnIndex,
+                team1Score: pistiRoom.team1Pisti,
+                team2Score: pistiRoom.team2Pisti,
+                message: msg
+            });
+        }
+    });
+}
+
+function startPistiMatch() {
+    pistiRoom.deck = createPistiDeck();
+    pistiRoom.pile = [];
+    pistiRoom.team1Captured = [];
+    pistiRoom.team2Captured = [];
+    pistiRoom.team1Pisti = 0;
+    pistiRoom.team2Pisti = 0;
+    pistiRoom.turnIndex = 0;
+    pistiRoom.lastCapturerTeam = 0;
+    pistiRoom.active = true;
+
+    for (let i = 0; i < 4; i++) pistiRoom.pile.push(pistiRoom.deck.pop());
+    dealPistiCards();
+}
+
+function dealPistiCards() {
+    if (pistiRoom.deck.length === 0) {
+        finishPistiMatch();
+        return;
+    }
+    for (let i = 0; i < 4; i++) {
+        pistiRoom.players.forEach(p => {
+            if (pistiRoom.deck.length > 0) p.hand.push(pistiRoom.deck.pop());
+        });
+    }
+    broadcastPistiState("Kartlar dağıtıldı! Sıra: " + pistiRoom.players[pistiRoom.turnIndex].name);
+    checkPistiBotTurn();
+}
+
+function processPistiMove(playerIdx, cardIdx) {
+    if (!pistiRoom.active || pistiRoom.turnIndex !== playerIdx) return;
+    let p = pistiRoom.players[playerIdx];
+    if (!p || cardIdx < 0 || cardIdx >= p.hand.length) return;
+
+    let playedCard = p.hand.splice(cardIdx, 1).at(0);
+    let team = (playerIdx % 2 === 0) ? 1 : 2;
+    let actionText = `${p.name} (${playedCard.value}${playedCard.suit}) attı.`;
+
+    if (pistiRoom.pile.length > 0) {
+        let topCard = pistiRoom.pile.at(-1);
+        let isMatch = playedCard.value === topCard.value;
+        let isJack = playedCard.value === 'J';
+
+        if (isMatch || isJack) {
+            let isPisti = (pistiRoom.pile.length === 1 && isMatch);
+            pistiRoom.pile.push(playedCard);
+            if (team === 1) {
+                pistiRoom.team1Captured.push(...pistiRoom.pile);
+                if (isPisti) pistiRoom.team1Pisti += (isJack ? 20 : 10);
+            } else {
+                pistiRoom.team2Captured.push(...pistiRoom.pile);
+                if (isPisti) pistiRoom.team2Pisti += (isJack ? 20 : 10);
+            }
+            pistiRoom.lastCapturerTeam = team;
+            pistiRoom.pile = [];
+            actionText = isPisti ? `🔥 ${p.name} PİŞTİ YAPTI!` : `✨ ${p.name} yerdeki kartları topladı!`;
+        } else {
+            pistiRoom.pile.push(playedCard);
+        }
+    } else {
+        pistiRoom.pile.push(playedCard);
+    }
+
+    pistiRoom.turnIndex = (pistiRoom.turnIndex + 1) % 4;
+    let allHandsEmpty = pistiRoom.players.every(pl => pl.hand.length === 0);
+
+    if (allHandsEmpty) {
+        broadcastPistiState(actionText);
+        setTimeout(() => { dealPistiCards(); }, 1600);
+    } else {
+        broadcastPistiState(actionText + " | Sıra: " + pistiRoom.players[pistiRoom.turnIndex].name);
+        checkPistiBotTurn();
+    }
+}
+
+function checkPistiBotTurn() {
+    if (!pistiRoom.active) return;
+    let currentPlayer = pistiRoom.players[pistiRoom.turnIndex];
+    if (currentPlayer && currentPlayer.isBot) {
+        setTimeout(() => {
+            if (!pistiRoom.active) return;
+            let topCard = pistiRoom.pile.length > 0 ? pistiRoom.pile.at(-1) : null;
+            let chosen = -1;
+            if (topCard) {
+                chosen = currentPlayer.hand.findIndex(c => c.value === topCard.value);
+                if (chosen === -1 && pistiRoom.pile.length >= 2) chosen = currentPlayer.hand.findIndex(c => c.value === 'J');
+            }
+            if (chosen === -1) {
+                chosen = currentPlayer.hand.findIndex(c => c.value !== 'J');
+                if (chosen === -1) chosen = 0;
+            }
+            processPistiMove(pistiRoom.turnIndex, chosen);
+        }, 1600);
+    }
+}
+
+function calcPistiTeamPoints(cards, pistiPts) {
+    let pts = pistiPts;
+    for (let c of cards) {
+        if (c.value === 'A' || c.value === 'J') pts += 1;
+        else if (c.suit === '♦' && c.value === '10') pts += 3;
+        else if (c.suit === '♣' && c.value === '2') pts += 2;
+    }
+    return pts;
+}
+
+function finishPistiMatch() {
+    if (pistiRoom.pile.length > 0) {
+        if (pistiRoom.lastCapturerTeam === 1) pistiRoom.team1Captured.push(...pistiRoom.pile);
+        else if (pistiRoom.lastCapturerTeam === 2) pistiRoom.team2Captured.push(...pistiRoom.pile);
+        pistiRoom.pile = [];
+    }
+    let t1 = calcPistiTeamPoints(pistiRoom.team1Captured, pistiRoom.team1Pisti);
+    let t2 = calcPistiTeamPoints(pistiRoom.team2Captured, pistiRoom.team2Pisti);
+    if (pistiRoom.team1Captured.length > pistiRoom.team2Captured.length) t1 += 3;
+    else if (pistiRoom.team2Captured.length > pistiRoom.team1Captured.length) t2 += 3;
+
+    pistiRoom.active = false;
+    io.to("pisti_lobby").emit('pistiGameOver', { team1Score: t1, team2Score: t2 });
+    pistiRoom.players = pistiRoom.players.filter(p => !p.isBot);
+}
+
+io.on('connection', (socket) => {
+    socket.on('joinPisti', (data) => {
+        socket.join("pisti_lobby");
+        if (pistiRoom.active) {
+            socket.emit('pistiBusy', { message: "Masada şu an devam eden bir el var, bitince katılabilirsiniz." });
+            return;
+        }
+        let exists = pistiRoom.players.find(p => p.id === socket.id);
+        if (!exists && pistiRoom.players.length < 4) {
+            let pName = (data && data.name) ? String(data.name).substring(0, 14) : ("Oyuncu_" + socket.id.substring(0, 3));
+            pistiRoom.players.push({ id: socket.id, name: pName, isBot: false, hand: [] });
+        }
+        io.to("pisti_lobby").emit('pistiLobbyUpdate', {
+            players: pistiRoom.players.map(p => ({ name: p.name, isBot: p.isBot }))
+        });
+        if (pistiRoom.players.length === 4) {
+            startPistiMatch();
+        }
+    });
+
+    socket.on('fillPistiBots', () => {
+        if (pistiRoom.active || pistiRoom.players.length === 0) return;
+        let botNum = 1;
+        while (pistiRoom.players.length < 4) {
+            pistiRoom.players.push({ id: "bot_" + botNum, name: "Bot_" + botNum, isBot: true, hand: [] });
+            botNum++;
+        }
+        startPistiMatch();
+    });
+
+    socket.on('playPistiCard', (data) => {
+        let idx = pistiRoom.players.findIndex(p => p.id === socket.id);
+        if (idx !== -1 && data && typeof data.cardIndex === 'number') {
+            processPistiMove(idx, data.cardIndex);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        let idx = pistiRoom.players.findIndex(p => p.id === socket.id);
+        if (idx !== -1) {
+            if (pistiRoom.active) {
+                pistiRoom.players[idx].isBot = true;
+                pistiRoom.players[idx].name += " (Bot)";
+                checkPistiBotTurn();
+            } else {
+                pistiRoom.players.splice(idx, 1);
+                io.to("pisti_lobby").emit('pistiLobbyUpdate', {
+                    players: pistiRoom.players.map(p => ({ name: p.name, isBot: p.isBot }))
+                });
+            }
+        }
+    });
+});
+
 getOrCreateRoom(1);
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, '0.0.0.0', () => { console.log('Odalı Eşleştirmeli Tombala Sunucusu aktif! Port: ' + PORT); });
