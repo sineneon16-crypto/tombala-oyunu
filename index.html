@@ -126,17 +126,16 @@
         @media screen and (max-width: 900px) and (orientation: portrait) {
     body {
         position: fixed;
-        top: 0;
-        left: 100vw;
-        width: 100vh;
-        height: 100vw;
-        transform: rotate(90deg);
-        transform-origin: top left;
-        overflow: auto;
-        zoom: 0.65;
+        top: 50%;
+        left: 50%;
+        width: 1050px;
+        height: auto;
+        transform: translate(-50%, -50%) rotate(90deg) scale(0.55);
+        transform-origin: center center;
+        overflow: visible;
     }
 }
-      @media screen and (max-width: 950px) and (orientation: landscape) {
+@media screen and (max-width: 950px) and (orientation: landscape) {
     body {
         zoom: 0.65;
         overflow-x: hidden;
