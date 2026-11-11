@@ -461,20 +461,13 @@
         }
 
         function toggleMarkCell(cardIndex, rowIndex, colIndex, cellValue) {
-            if (!isGameActiveGlobal || !purchasedCardsState[cardIndex] || cellValue === 0) return;
-            if (!drawnNumbersGlobal.includes(String(cellValue))) { 
-                fakeClickCounter++;
-                if (fakeClickCounter >= 3) {
-                    fakeClickCounter = 0;
-                    triggerPenaltyAdMode();
-                }
-                return;
-            }
-            fakeClickCounter = 0;
-            userMarkedCellsMemory[cardIndex][rowIndex][colIndex] = !userMarkedCellsMemory[cardIndex][rowIndex][colIndex];
-            renderCards(false); 
-            checkAndActivateAwardButtons();
-        }
+    if (!isGameActiveGlobal || !purchasedCardsState[cardIndex] || cellValue === 0) return;
+    if (!drawnNumbersGlobal.includes(String(cellValue))) return;
+    if (userMarkedCellsMemory[cardIndex][rowIndex][colIndex] === true) return;
+    userMarkedCellsMemory[cardIndex][rowIndex][colIndex] = true;
+    renderCards(false);
+    checkAndActivateAwardButtons();
+}
         function triggerPenaltyAdMode() {
             let btn = document.getElementById('watchAdBtn'); if (btn.disabled) return;
             document.getElementById('lobbyStatus').innerHTML = `<span style="color:#d90429; font-weight:bold;">⚠️ CEZA KİLİDİ: Üst Üste 3 Sahte Tıklama! Reklam İzleniyor...</span>`;
