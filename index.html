@@ -731,5 +731,39 @@
             syncPurchasedCardsWithServer();
         });
     </script>
+    <!-- Google AdSense Uyumlu Bilgi Alanı ve Yasal Sayfalar -->
+<footer style="margin-top: 30px; padding: 20px; background: #0f172a; color: #94a3b8; text-align: center; font-size: 13px; border-top: 1px solid #1e293b; border-radius: 8px;">
+    <div style="max-width: 800px; margin: 0 auto 15px auto; line-height: 1.6;">
+        <h3 style="color: #fbbf24; margin-bottom: 8px; font-size: 16px;">Online Tombala Oyunu Hakkında</h3>
+        <p>Tamamen ücretsiz ve eğlence amaçlı tasarlanan online tombala salonunda arkadaşlarınızla veya diğer oyuncularla aynı anda canlı çekilişlere katılabilirsiniz. Oyun içi bakiyeler sanal olup hiçbir gerçek parasal değeri bulunmamaktadır. 1. Çinko, 2. Çinko ve Tombala heyecanını tarayıcınız üzerinden kesintisiz yaşayabilirsiniz.</p>
+    </div>
+    <div style="margin-bottom: 10px;">
+        <a href="javascript:void(0)" onclick="openLegalModal('privacy')" style="color: #38bdf8; text-decoration: none; margin: 0 10px;">Gizlilik Politikası</a> |
+        <a href="javascript:void(0)" onclick="openLegalModal('terms')" style="color: #38bdf8; text-decoration: none; margin: 0 10px;">Kullanım Şartları</a> |
+        <a href="javascript:void(0)" onclick="openLegalModal('contact')" style="color: #38bdf8; text-decoration: none; margin: 0 10px;">İletişim</a>
+    </div>
+    <div style="font-size: 11px; color: #64748b;">© 2026 Online Tombala Salonu - Tüm Hakları Saklıdır.</div>
+</footer>
+
+<div id="legalModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999999; justify-content:center; align-items:center; padding:15px;">
+    <div style="background:#1e293b; color:#f8fafc; max-width:600px; width:100%; max-height:80vh; overflow-y:auto; padding:25px; border-radius:12px; border:1px solid #334155; text-align:left; position:relative;">
+        <button onclick="document.getElementById('legalModal').style.display='none'" style="position:absolute; top:15px; right:15px; background:#ef4444; color:#fff; border:none; border-radius:6px; padding:5px 12px; cursor:pointer; font-weight:bold;">Kapat</button>
+        <div id="legalContent" style="line-height:1.6; font-size:14px;"></div>
+    </div>
+</div>
+
+<script>
+function openLegalModal(type) {
+    const content = document.getElementById('legalContent');
+    if (type === 'privacy') {
+        content.innerHTML = '<h2 style="color:#fbbf24; margin-top:0;">Gizlilik Politikası</h2><p>Sitemizi ziyaret ettiğinizde oyun deneyiminizi iyileştirmek ve oyun içi sanal bakiyenizi korumak amacıyla temel bağlantı bilgileri ve çerezler (cookies) kullanılmaktadır.</p><p><strong>Google AdSense ve Üçüncü Taraf Çerezleri:</strong> Sitemizde Google AdSense reklamları yayınlanmaktadır. Google, kullanıcıların sitemize ve internetteki diğer sitelere yaptığı önceki ziyaretlere dayalı olarak reklam sunmak için çerezleri kullanır. Kullanıcılar Google Reklam Ayarları sayfasını ziyaret ederek kişiselleştirilmiş reklamcılığı devre dışı bırakabilirler.</p>';
+    } else if (type === 'terms') {
+        content.innerHTML = '<h2 style="color:#fbbf24; margin-top:0;">Kullanım Şartları</h2><p>Bu platform tamamen ücretsiz ve eğlence amaçlı bir çevrimiçi tombala oyunudur. Sitede yer alan puanlar ve bakiyeler tamamen sanaldır; gerçek paraya çevrilemez, nakit karşılığı talep edilemez veya devredilemez.</p><p>Sohbet alanında genel ahlak kurallarına aykırı, hakaret içeren veya spam niteliğindeki mesajların paylaşılması yasaktır.</p>';
+    } else if (type === 'contact') {
+        content.innerHTML = '<h2 style="color:#fbbf24; margin-top:0;">İletişim</h2><p>Oyunla ilgili her türlü görüş, öneri, teknik destek ve reklam iş birlikleri için bizimle e-posta üzerinden iletişime geçebilirsiniz.</p><p><strong>E-posta Adresimiz:</strong>sineneon16@gmail.com</p>';
+    }
+    document.getElementById('legalModal').style.display = 'flex';
+}
+</script>
 </body>
 </html>
