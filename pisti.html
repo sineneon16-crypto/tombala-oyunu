@@ -229,36 +229,7 @@
             pointer-events: none;
             transition: transform 0.85s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.85s ease-in;
         }
-        function animateCaptureToPlayer(winnerIdx, myIdx, mode, lastCard) {
-    const pileEl = document.getElementById('pileBox');
-    if (!pileEl) return;
-    const rect = pileEl.getBoundingClientRect();
-
-    let targetId = 'tagBottom';
-    if (mode === 'solo') {
-        targetId = (winnerIdx === myIdx) ? 'tagBottom' : 'tagTop';
-    } else {
-        const diff = (winnerIdx - myIdx + 4) % 4;
-        if (diff === 1) targetId = 'tagRight';
-        else if (diff === 2) targetId = 'tagTop';
-        else if (diff === 3) targetId = 'tagLeft';
-    }
-
-    const targetEl = document.getElementById(targetId);
-    if (!targetEl) return;
-    const tRect = targetEl.getBoundingClientRect();
-
-    const flyCard = document.createElement('div');
-    flyCard.className = 'flying-pile-card';
-    flyCard.style.left = rect.left + 'px';
-    flyCard.style.top = rect.top + 'px';
-    flyCard.innerHTML = lastCard ? renderCard(lastCard, false, 0) : '<div class="card-back"></div>';
-    document.body.appendChild(flyCard);
-
-    const dx = (tRect.left + tRect.width / 2) - (rect.left + rect.width / 2);
-    const dy = (tRect.top + tRect.height / 2) - (rect.top + rect.height / 2);
-
-    requestAnimationFrame(() => {
+        
         flyCard.style.transform = `translate(${dx}px, ${dy}px) scale(0.35) rotate(18deg)`;
         flyCard.style.opacity = '0';
     });
@@ -514,6 +485,37 @@ document.getElementById('handBottom').innerHTML = state.myHand.map((c, i) => {
             document.getElementById('endBtn').style.display = 'block';
             document.getElementById('endOverlay').style.display = 'flex';
         });
+
+        function animateCaptureToPlayer(winnerIdx, myIdx, mode, lastCard) {
+    const pileEl = document.getElementById('pileBox');
+    if (!pileEl) return;
+    const rect = pileEl.getBoundingClientRect();
+
+    let targetId = 'tagBottom';
+    if (mode === 'solo') {
+        targetId = (winnerIdx === myIdx) ? 'tagBottom' : 'tagTop';
+    } else {
+        const diff = (winnerIdx - myIdx + 4) % 4;
+        if (diff === 1) targetId = 'tagRight';
+        else if (diff === 2) targetId = 'tagTop';
+        else if (diff === 3) targetId = 'tagLeft';
+    }
+
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl) return;
+    const tRect = targetEl.getBoundingClientRect();
+
+    const flyCard = document.createElement('div');
+    flyCard.className = 'flying-pile-card';
+    flyCard.style.left = rect.left + 'px';
+    flyCard.style.top = rect.top + 'px';
+    flyCard.innerHTML = lastCard ? renderCard(lastCard, false, 0) : '<div class="card-back"></div>';
+    document.body.appendChild(flyCard);
+
+    const dx = (tRect.left + tRect.width / 2) - (rect.left + rect.width / 2);
+    const dy = (tRect.top + tRect.height / 2) - (rect.top + rect.height / 2);
+
+    requestAnimationFrame(() => {
     </script>
 </body>
 </html>
