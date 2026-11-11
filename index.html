@@ -123,22 +123,20 @@
         .action-btn.bingo-style.btn-active { background: #fb5607 !important; color: #fff !important; box-shadow: 0 0 12px #fb5607; }
         .info-box { background: #112240; border-radius: 8px; border: 1px solid #1e3d59; padding: 10px; text-align: center; }
         .info-box-title { font-size: 11px; color: #ffb703; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; display: block; }
-       @media screen and (max-width: 900px) and (orientation: portrait) {
-    html {
-        transform: rotate(90deg);
-        transform-origin: left top;
+        @media screen and (max-width: 900px) and (orientation: portrait) {
+    body {
+        position: fixed;
+        top: 0;
+        left: 100vw;
         width: 100vh;
         height: 100vw;
-        overflow-x: hidden;
-        position: absolute;
-        top: 100%;
-        left: 0;
-    }
-    body {
-        zoom: 0.60;
+        transform: rotate(90deg);
+        transform-origin: top left;
+        overflow: auto;
+        zoom: 0.65;
     }
 }
-@media screen and (max-width: 950px) and (orientation: landscape) {
+      @media screen and (max-width: 950px) and (orientation: landscape) {
     body {
         zoom: 0.65;
         overflow-x: hidden;
