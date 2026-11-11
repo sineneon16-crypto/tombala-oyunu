@@ -3,250 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Klasik Pişti - Online Oyun Salonu</title>
+    <title>4 Kişilik Canlı Pişti - Online Oyun Salonu</title>
+    <script src="/socket.io/socket.io.js"></script>
     <script async src="https://googlesyndication.com" crossorigin="anonymous"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
         body { background: radial-gradient(circle, #065f46 0%, #022c22 100%); color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
-        .top-bar { background: rgba(15, 23, 42, 0.9); padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fbbf24; }
+        .top-bar { background: rgba(15, 23, 42, 0.92); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fbbf24; }
         .back-btn { background: #334155; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; }
-        .scoreboard { display: flex; gap: 15px; font-size: 14px; font-weight: bold; }
-        .score-box { background: #1e293b; padding: 5px 12px; border-radius: 8px; border: 1px solid #475569; }
-        .score-box span { color: #fbbf24; font-size: 16px; }
-        .table-area { flex: 1; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; max-width: 900px; width: 100%; margin: 0 auto; }
-        .hand { display: flex; justify-content: center; gap: 10px; min-height: 115px; align-items: center; }
-        .card { width: 76px; height: 110px; background: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between; padding: 6px; font-weight: bold; font-size: 18px; cursor: pointer; transition: transform 0.2s; position: relative; }
-        .player-hand .card:hover { transform: translateY(-12px); box-shadow: 0 8px 18px rgba(251, 191, 36, 0.6); }
+        .scoreboard { display: flex; gap: 10px; font-size: 13px; font-weight: bold; }
+        .score-box { background: #1e293b; padding: 5px 10px; border-radius: 8px; border: 1px solid #475569; }
+        .score-box span { color: #fbbf24; font-size: 15px; }
+        .table-grid { flex: 1; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: 90px 1fr 90px; max-width: 960px; width: 100%; margin: 0 auto; padding: 10px; align-items: center; }
+        .seat-top { grid-column: 2; grid-row: 1; text-align: center; }
+        .seat-left { grid-column: 1; grid-row: 2; text-align: center; }
+        .seat-right { grid-column: 3; grid-row: 2; text-align: center; }
+        .seat-bottom { grid-column: 2; grid-row: 3; text-align: center; }
+        .center-table { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .player-tag { display: inline-block; background: rgba(15,23,42,0.8); padding: 4px 10px; border-radius: 12px; font-size: 12px; margin-bottom: 6px; border: 1px solid #475569; }
+        .player-tag.active-turn { border-color: #fbbf24; color: #fbbf24; box-shadow: 0 0 10px rgba(251,191,36,0.5); }
+        .hand { display: flex; justify-content: center; gap: 8px; min-height: 96px; align-items: center; }
+        .side-hand { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .card { width: 68px; height: 98px; background: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between; padding: 5px; font-weight: bold; font-size: 16px; cursor: pointer; transition: transform 0.2s; }
+        .player-hand .card:hover { transform: translateY(-10px); box-shadow: 0 8px 16px rgba(251,191,36,0.7); }
         .card.red { color: #dc2626; }
         .card.black { color: #0f172a; }
-        .card-center { font-size: 32px; text-align: center; }
-        .card-back { background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 8px, #1d4ed8 8px, #1d4ed8 16px); border: 3px solid #fff; cursor: default; }
-        .center-zone { display: flex; align-items: center; justify-content: center; gap: 35px; position: relative; width: 100%; }
-        .deck-box { position: relative; text-align: center; }
-        .deck-count { position: absolute; bottom: -22px; width: 100%; font-size: 12px; color: #cbd5e1; }
-        .pile-box { position: relative; width: 85px; height: 115px; border: 2px dashed rgba(255,255,255,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-        .pile-count { position: absolute; bottom: -22px; width: 120px; text-align: center; font-size: 12px; color: #fbbf24; }
-        .status-msg { background: rgba(15, 23, 42, 0.85); color: #fbbf24; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; text-align: center; border: 1px solid #fbbf24; min-height: 36px; }
-        .pisti-toast { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%) scale(0.5); background: #fbbf24; color: #0f172a; font-size: 28px; font-weight: 900; padding: 15px 30px; border-radius: 16px; opacity: 0; pointer-events: none; transition: all 0.3s; z-index: 999; }
-        .pisti-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: #1e293b; padding: 25px; border-radius: 14px; border: 2px solid #fbbf24; text-align: center; max-width: 360px; width: 90%; }
-        .modal-content h2 { color: #fbbf24; margin-bottom: 12px; }
-        .modal-content p { margin-bottom: 15px; line-height: 1.6; font-size: 15px; }
-        .btn-restart { background: #fbbf24; color: #0f172a; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        @media (max-width: 600px) {
-            .card { width: 64px; height: 94px; font-size: 15px; padding: 4px; }
-            .card-center { font-size: 24px; }
-            .center-zone { gap: 20px; }
-        }
+        .card-center { font-size: 26px; text-align: center; }
+        .card-back { width: 46px; height: 66px; background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 6px, #1d4ed8 6px, #1d4ed8 12px); border: 2px solid #fff; border-radius: 6px; }
+        .side-card-back { width: 54px; height: 22px; background: #1e3a8a; border: 2px solid #fff; border-radius: 4px; }
+        .center-cards { display: flex; align-items: center; gap: 25px; }
+        .pile-box { width: 76px; height: 104px; border: 2px dashed rgba(255,255,255,0.35); border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .count-badge { font-size: 11px; color: #fbbf24; margin-top: 4px; text-align: center; }
+        .status-msg { background: rgba(15, 23, 42, 0.88); color: #fbbf24; padding: 7px 14px; border-radius: 18px; font-size: 13px; font-weight: bold; border: 1px solid #fbbf24; text-align: center; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2,6,23,0.9); z-index: 999; display: flex; justify-content: center; align-items: center; padding: 15px; }
+        .box { background: #1e293b; padding: 24px; border-radius: 14px; border: 2px solid #fbbf24; max-width: 380px; width: 100%; text-align: center; }
+        .box h2 { color: #fbbf24; margin-bottom: 12px; }
+        .lobby-list { background: #0f172a; padding: 12px; border-radius: 8px; margin: 12px 0; text-align: left; font-size: 14px; line-height: 1.8; }
+        .btn { background: #fbbf24; color: #0f172a; border: none; padding: 11px 20px; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 8px; }
+        input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 8px; }
     </style>
 </head>
-<body>
-    <div class="top-bar">
-        <a href="/" class="back-btn">← Oyun Salonu</a>
-        <div class="scoreboard">
-            <div class="score-box">Siz: <span id="playerScore">0</span></div>
-            <div class="score-box">Rakip: <span id="botScore">0</span></div>
-        </div>
-    </div>
-
-    <div class="table-area">
-        <div>
-            <div style="text-align:center; font-size:12px; color:#a7f3d0; margin-bottom:5px;">🤖 Yapay Zeka Rakip</div>
-            <div class="hand" id="botHand"></div>
-        </div>
-
-        <div class="center-zone">
-            <div class="deck-box">
-                <div class="card card-back" id="deckCard"></div>
-                <div class="deck-count" id="deckCount">Deste: 44</div>
-            </div>
-            <div class="pile-box" id="pileBox">
-                <div class="pile-count" id="pileCount">Yerde: 4 Kart</div>
-            </div>
-        </div>
-
-        <div class="status-msg" id="statusMsg">Sıra sizde! Bir kart seçin.</div>
-
-        <div>
-            <div class="hand player-hand" id="playerHand"></div>
-            <div style="text-align:center; font-size:12px; color:#fbbf24; margin-top:5px;">👤 Sizin Eliniz</div>
-        </div>
-    </div>
-
-    <div class="pisti-toast" id="pistiToast">🔥 PİŞTİ! +10</div>
-
-    <div class="modal" id="endModal">
-        <div class="modal-content">
-            <h2 id="endTitle">El Bitti!</h2>
-            <p id="endSummary"></p>
-            <button class="btn-restart" onclick="startNewGame()">Yeni Oyun Başlat</button>
-        </div>
-    </div>
-    <script>
-        const suits = ['♠', '♥', '♦', '♣'];
-        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-        let deck = [], pile = [], playerHand = [], botHand = [];
-        let playerCaptured = [], botCaptured = [];
-        let playerPisti = 0, botPisti = 0;
-        let lastCapturer = null, isPlayerTurn = true;
-
-        function createDeck() {
-            deck = [];
-            for (let s of suits) {
-                for (let v of values) deck.push({ suit: s, value: v, isRed: (s === '♥' || s === '♦') });
-            }
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
-        }
-
-        function showToast(text) {
-            const t = document.getElementById('pistiToast');
-            t.innerText = text;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 1400);
-        }
-
-        function renderCardHTML(card, clickable = false, idx = 0) {
-            const colorClass = card.isRed ? 'red' : 'black';
-            const clickAttr = clickable ? `onclick="playPlayerCard(${idx})"` : '';
-            return `<div class="card ${colorClass}" ${clickAttr}>
-                <div>${card.value}${card.suit}</div>
-                <div class="card-center">${card.suit}</div>
-                <div style="text-align:right; transform:rotate(180deg);">${card.value}${card.suit}</div>
-            </div>`;
-        }
-
-        function updateUI() {
-            document.getElementById('playerHand').innerHTML = playerHand.map((c, i) => renderCardHTML(c, isPlayerTurn, i)).join('');
-            document.getElementById('botHand').innerHTML = botHand.map(() => `<div class="card card-back"></div>`).join('');
-            const pileBox = document.getElementById('pileBox');
-            if (pile.length > 0) {
-                pileBox.innerHTML = renderCardHTML(pile.at(-1)) + `<div class="pile-count">Yerde: ${pile.length} Kart</div>`;
-            } else {
-                pileBox.innerHTML = `<div class="pile-count">Yer Boş</div>`;
-            }
-            document.getElementById('deckCount').innerText = `Deste: ${deck.length}`;
-            document.getElementById('deckCard').style.visibility = deck.length > 0 ? 'visible' : 'hidden';
-        }
-
-        function dealHands() {
-            if (deck.length === 0) { finishGame(); return; }
-            for (let i = 0; i < 4; i++) {
-                if (deck.length > 0) playerHand.push(deck.pop());
-                if (deck.length > 0) botHand.push(deck.pop());
-            }
-            updateUI();
-        }
-
-        function checkCapture(playedCard, isPlayer) {
-            if (pile.length === 0) { pile.push(playedCard); return false; }
-            const topCard = pile.at(-1);
-            const isMatch = playedCard.value === topCard.value;
-            const isJack = playedCard.value === 'J';
-            if (isMatch || isJack) {
-                const isPisti = (pile.length === 1 && isMatch);
-                pile.push(playedCard);
-                if (isPlayer) {
-                    playerCaptured.push(...pile);
-                    lastCapturer = 'player';
-                    if (isPisti) {
-                        const pts = playedCard.value === 'J' ? 20 : 10;
-                        playerPisti += pts;
-                        showToast(playedCard.value === 'J' ? '🔥 VALE PİŞTİ! +20' : '🔥 PİŞTİ! +10');
-                    }
-                } else {
-                    botCaptured.push(...pile);
-                    lastCapturer = 'bot';
-                    if (isPisti) {
-                        const pts = playedCard.value === 'J' ? 20 : 10;
-                        botPisti += pts;
-                        showToast(playedCard.value === 'J' ? '🤖 RAKİP VALE PİŞTİ! +20' : '🤖 RAKİP PİŞTİ! +10');
-                    }
-                }
-                pile = [];
-                return true;
-            }
-            pile.push(playedCard);
-            return false;
-        }
-
-        function playPlayerCard(index) {
-            if (!isPlayerTurn) return;
-            isPlayerTurn = false;
-            const card = playerHand.splice(index, 1).at(0);
-            const took = checkCapture(card, true);
-            document.getElementById('statusMsg').innerText = took ? 'Yerdeki kartları aldınız! Sıra rakipte...' : 'Sıra rakipte...';
-            updateUI();
-            setTimeout(botTurn, 850);
-        }
-
-        function botTurn() {
-            let chosenIdx = -1;
-            const topCard = pile.length > 0 ? pile.at(-1) : null;
-            if (topCard) {
-                chosenIdx = botHand.findIndex(c => c.value === topCard.value);
-                if (chosenIdx === -1 && pile.length >= 2) chosenIdx = botHand.findIndex(c => c.value === 'J');
-            }
-            if (chosenIdx === -1) {
-                chosenIdx = botHand.findIndex(c => c.value !== 'J');
-                if (chosenIdx === -1) chosenIdx = 0;
-            }
-            const card = botHand.splice(chosenIdx, 1).at(0);
-            const took = checkCapture(card, false);
-            if (playerHand.length === 0 && botHand.length === 0) {
-                if (deck.length > 0) dealHands();
-                else { finishGame(); return; }
-            }
-            isPlayerTurn = true;
-            document.getElementById('statusMsg').innerText = took ? 'Rakip yerdeki kartları aldı. Sıra sizde!' : 'Sıra sizde! Bir kart seçin.';
-            updateUI();
-        }
-
-        function calculatePoints(cards, pistiPoints) {
-            let pts = pistiPoints;
-            for (let c of cards) {
-                if (c.value === 'A' || c.value === 'J') pts += 1;
-                else if (c.suit === '♦' && c.value === '10') pts += 3;
-                else if (c.suit === '♣' && c.value === '2') pts += 2;
-            }
-            return pts;
-        }
-
-        function finishGame() {
-            if (pile.length > 0) {
-                if (lastCapturer === 'player') playerCaptured.push(...pile);
-                else if (lastCapturer === 'bot') botCaptured.push(...pile);
-                pile = [];
-            }
-            updateUI();
-            let pScore = calculatePoints(playerCaptured, playerPisti);
-            let bScore = calculatePoints(botCaptured, botPisti);
-            if (playerCaptured.length > botCaptured.length) pScore += 3;
-            else if (botCaptured.length > playerCaptured.length) bScore += 3;
-            document.getElementById('playerScore').innerText = pScore;
-            document.getElementById('botScore').innerText = bScore;
-            const title = pScore > bScore ? '🎉 Tebrikler, Kazandınız!' : (bScore > pScore ? '🤖 Rakip Kazandı!' : '🤝 Berabere!');
-            document.getElementById('endTitle').innerText = title;
-            document.getElementById('endSummary').innerHTML = `<strong>Sizin Puanınız:</strong> ${pScore} (${playerCaptured.length} kart)<br><strong>Rakip Puanı:</strong> ${bScore} (${botCaptured.length} kart)<br><small style="color:#94a3b8;">(Kart çoğunluğu +3 puan dahildir)</small>`;
-            document.getElementById('endModal').style.display = 'flex';
-        }
-
-        function startNewGame() {
-            document.getElementById('endModal').style.display = 'none';
-            createDeck();
-            pile = []; playerHand = []; botHand = [];
-            playerCaptured = []; botCaptured = [];
-            playerPisti = 0; botPisti = 0;
-            lastCapturer = null; isPlayerTurn = true;
-            for (let i = 0; i < 4; i++) pile.push(deck.pop());
-            dealHands();
-            document.getElementById('statusMsg').innerText = 'Yeni el başladı! Sıra sizde.';
-        }
-
-        startNewGame();
-    </script>
-</body>
-</html>
