@@ -320,12 +320,29 @@
             });
         }
 
-        function joinTable() {
-            const name = document.getElementById('playerNameInput').value.trim() || "Oyuncu";
-            document.getElementById('joinForm').style.display = 'none';
-            document.getElementById('waitingArea').style.display = 'block';
-            socket.emit('joinPisti', { name: name, mode: selectedMode, target: selectedTarget });
-        }
+        function joinTable(forceNew = false, roomId = null) {
+    const name = document.getElementById('playerNameInput').value.trim() || "Oyuncu";
+    document.getElementById('joinForm').style.display = 'none';
+    document.getElementById('waitingArea').style.display = 'block';
+    socket.emit('joinPisti', { name: name, mode: selectedMode, target: selectedTarget, forceNew: forceNew, roomId: roomId });
+}
+
+socket.on('pistiRoomsList', (rooms) => {
+    const box = document.getElementById('activeRoomsBox');
+    if (!box) return;
+    if (rooms.length === 0) {
+        box.innerHTML = '<div style="color:#94a3b8; text-align:center;">Şu an bekleyen masa yok, yukarıdan hemen masa açabilirsiniz.</div>';
+        return;
+    }
+    box.innerHTML = '<strong style="color:#fbbf24;">Açık Masalar:</strong><br>' + rooms.map(r => {
+        const mText = r.mode === 'solo' ? 'Tekli' : 'Eşli';
+        const btn = r.active ? '<span style="color:#ef4444;">Oyunda</span>' : `<button onclick="joinTable(false, '${r.id}')" style="background:#38bdf8; color:#0f172a; border:none; border-radius:4px; padding:2px 8px; font-weight:bold; cursor:pointer;">Katıl</button>`;
+        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #1e293b;">
+            <span>${r.title} (${mText} - ${r.target}p) [${r.count}/${r.max}]</span>
+            ${btn}
+        </div>`;
+    }).join('');
+});
 
         socket.on('pistiLobbyUpdate', (data) => {
             const modeText = data.mode === 'solo' ? 'Tekli (2 Kişi)' : 'Eşli (4 Kişi)';
