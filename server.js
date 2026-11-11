@@ -337,7 +337,7 @@ function startLobbyTimer(fee) {
 }
 function startDrawLoop(fee) {
     let room = rooms[fee]; if (!room) return;
-    let drawSpeed = room.testMode ? 1000 : 2500;
+    let drawSpeed = room.testMode ? 1000 : 4500;
 
     room.gameInterval = setInterval(() => {
         if (!room || !room.gameActive) { 
