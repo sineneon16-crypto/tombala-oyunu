@@ -43,3 +43,160 @@
         input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 8px; }
     </style>
 </head>
+<body>
+    <div class="top-bar">
+        <a href="/" class="back-btn">← Salon</a>
+        <div class="scoreboard">
+            <div class="score-box">1-3 Takımı Pişti: <span id="t1Score">0</span></div>
+            <div class="score-box">2-4 Takımı Pişti: <span id="t2Score">0</span></div>
+        </div>
+    </div>
+
+    <div class="table-grid">
+        <div class="seat-top">
+            <div class="player-tag" id="tagTop">Ortak Bekleniyor</div>
+            <div class="hand" id="handTop"></div>
+        </div>
+
+        <div class="seat-left">
+            <div class="player-tag" id="tagLeft">Rakip 1</div>
+            <div class="side-hand" id="handLeft"></div>
+        </div>
+
+        <div class="center-table">
+            <div class="center-cards">
+                <div>
+                    <div class="card-back" style="width:68px; height:98px;"></div>
+                    <div class="count-badge" id="deckBadge">Deste: 44</div>
+                </div>
+                <div>
+                    <div class="pile-box" id="pileBox"></div>
+                    <div class="count-badge" id="pileBadge">Yerde: 4 Kart</div>
+                </div>
+            </div>
+            <div class="status-msg" id="statusMsg">Masaya bağlanılıyor...</div>
+        </div>
+
+        <div class="seat-right">
+            <div class="player-tag" id="tagRight">Rakip 2</div>
+            <div class="side-hand" id="handRight"></div>
+        </div>
+
+        <div class="seat-bottom">
+            <div class="player-tag" id="tagBottom">Siz</div>
+            <div class="hand player-hand" id="handBottom"></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="lobbyOverlay">
+        <div class="box">
+            <h2>🃏 4 Kişilik Pişti Masası</h2>
+            <p style="font-size:13px; color:#cbd5e1;">4 gerçek oyuncu dolduğunda oyun otomatik başlar veya beklemek istemezseniz botlarla başlatabilirsiniz.</p>
+            <div id="joinForm">
+                <input type="text" id="playerNameInput" placeholder="Takma adınızı yazın..." maxlength="14">
+                <button class="btn" onclick="joinTable()">Masaya Otur</button>
+            </div>
+            <div id="waitingArea" style="display:none;">
+                <div class="lobby-list" id="lobbyPlayersList"></div>
+                <button class="btn" onclick="socket.emit('fillPistiBots')">Botlarla Tamamla ve Başlat</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="endOverlay" style="display:none;">
+        <div class="box">
+            <h2 id="endTitle">El Tamamlandı!</h2>
+            <p id="endDetail" style="margin:15px 0; line-height:1.7;"></p>
+            <button class="btn" onclick="location.reload()">Yeni El İçin Masaya Dön</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let mySeatIndex = 0;
+
+        function joinTable() {
+            const name = document.getElementById('playerNameInput').value.trim() || "Oyuncu";
+            document.getElementById('joinForm').style.display = 'none';
+            document.getElementById('waitingArea').style.display = 'block';
+            socket.emit('joinPisti', { name: name });
+        }
+
+        socket.on('pistiLobbyUpdate', (data) => {
+            const list = document.getElementById('lobbyPlayersList');
+            list.innerHTML = `<strong>Masadaki Oyuncular (${data.players.length}/4):</strong><br>` +
+                data.players.map((p, i) => `${i + 1}. Koltuk: ${p.name}`).join('<br>');
+        });
+
+        socket.on('pistiBusy', (data) => {
+            alert(data.message);
+        });
+
+        function renderCard(card, clickable, idx) {
+            const cls = card.isRed ? 'red' : 'black';
+            const attr = clickable ? `onclick="playCard(${idx})"` : '';
+            return `<div class="card ${cls}" ${attr}>
+                <div>${card.value}${card.suit}</div>
+                <div class="card-center">${card.suit}</div>
+                <div style="text-align:right; transform:rotate(180deg);">${card.value}${card.suit}</div>
+            </div>`;
+        }
+
+        function playCard(idx) {
+            socket.emit('playPistiCard', { cardIndex: idx });
+        }
+
+        socket.on('pistiState', (state) => {
+            document.getElementById('lobbyOverlay').style.display = 'none';
+            mySeatIndex = state.myIndex;
+            const isMyTurn = (state.turnIndex === mySeatIndex);
+
+            document.getElementById('t1Score').innerText = state.team1Score;
+            document.getElementById('t2Score').innerText = state.team2Score;
+            document.getElementById('deckBadge').innerText = `Deste: ${state.deckCount}`;
+            document.getElementById('pileBadge').innerText = `Yerde: ${state.pileCount} Kart`;
+            document.getElementById('statusMsg').innerText = state.message;
+
+            const pileBox = document.getElementById('pileBox');
+            pileBox.innerHTML = state.topCard ? renderCard(state.topCard, false, 0) : '';
+
+            document.getElementById('handBottom').innerHTML = state.myHand.map((c, i) => renderCard(c, isMyTurn, i)).join('');
+
+            const rightIdx = (mySeatIndex + 1) % 4;
+            const topIdx = (mySeatIndex + 2) % 4;
+            const leftIdx = (mySeatIndex + 3) % 4;
+
+            const seats = [
+                { idx: mySeatIndex, tag: 'tagBottom', hand: null },
+                { idx: rightIdx, tag: 'tagRight', hand: 'handRight', side: true },
+                { idx: topIdx, tag: 'tagTop', hand: 'handTop', side: false },
+                { idx: leftIdx, tag: 'tagLeft', hand: 'handLeft', side: true }
+            ];
+
+            seats.forEach(s => {
+                const pl = state.players[s.idx];
+                const tagEl = document.getElementById(s.tag);
+                tagEl.innerText = `${pl.name} (Takım ${(s.idx % 2) + 1})`;
+                if (state.turnIndex === s.idx) tagEl.classList.add('active-turn');
+                else tagEl.classList.remove('active-turn');
+
+                if (s.hand) {
+                    const cardHTML = s.side ? `<div class="side-card-back"></div>` : `<div class="card-back"></div>`;
+                    document.getElementById(s.hand).innerHTML = Array(pl.cardCount).fill(cardHTML).join('');
+                }
+            });
+        });
+
+        socket.on('pistiGameOver', (res) => {
+            const myTeam = (mySeatIndex % 2) + 1;
+            const won = (myTeam === 1 && res.team1Score > res.team2Score) || (myTeam === 2 && res.team2Score > res.team1Score);
+            document.getElementById('endTitle').innerText = won ? '🎉 Takımınız Kazandı!' : 'El Sona Erdi!';
+            document.getElementById('endDetail').innerHTML = `
+                <strong>1. Takım (1-3. Koltuklar):</strong> ${res.team1Score} Puan<br>
+                <strong>2. Takım (2-4. Koltuklar):</strong> ${res.team2Score} Puan
+            `;
+            document.getElementById('endOverlay').style.display = 'flex';
+        });
+    </script>
+</body>
+</html>
