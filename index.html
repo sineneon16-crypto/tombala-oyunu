@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Oyun Salonu - Ücretsiz Canlı Oyunlar</title>
+    <script async src="https://googlesyndication.com" crossorigin="anonymous"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; }
+        header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 25px 20px; text-align: center; border-bottom: 2px solid #fbbf24; }
+        header h1 { color: #fbbf24; font-size: 28px; margin-bottom: 8px; }
+        header p { color: #94a3b8; font-size: 15px; }
+        .container { max-width: 1100px; width: 100%; margin: 30px auto; padding: 0 20px; flex: 1; }
+        .section-title { font-size: 20px; color: #e2e8f0; margin-bottom: 20px; border-left: 4px solid #fbbf24; padding-left: 12px; }
+        .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+        .game-card { background: #1e293b; border: 1px solid #334155; border-radius: 14px; overflow: hidden; transition: transform 0.2s, border-color 0.2s; display: flex; flex-direction: column; }
+        .game-card:hover { transform: translateY(-5px); border-color: #fbbf24; }
+        .game-banner { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 54px; background: linear-gradient(45deg, #1e1b4b, #312e81); position: relative; }
+        .badge-live { position: absolute; top: 12px; right: 12px; background: #10b981; color: #fff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; }
+        .badge-soon { position: absolute; top: 12px; right: 12px; background: #64748b; color: #fff; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px; }
+        .game-info { padding: 18px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .game-info h3 { color: #fbbf24; font-size: 19px; margin-bottom: 8px; }
+        .game-info p { color: #cbd5e1; font-size: 13px; line-height: 1.5; margin-bottom: 18px; }
+        .play-btn { display: block; text-align: center; background: #fbbf24; color: #0f172a; font-weight: bold; padding: 12px; border-radius: 8px; text-decoration: none; font-size: 15px; transition: background 0.2s; }
+        .play-btn:hover { background: #f59e0b; }
+        .play-btn.disabled { background: #334155; color: #94a3b8; pointer-events: none; }
+        footer { background: #020617; color: #64748b; text-align: center; padding: 20px; font-size: 13px; border-top: 1px solid #1e293b; margin-top: 40px; }
+        footer a { color: #38bdf8; text-decoration: none; margin: 0 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎲 Online Oyun Salonu</h1>
+        <p>Tarayıcınızdan indirmeden, ücretsiz ve canlı olarak oynayabileceğiniz masa oyunları</p>
+    </header>
+
+    <div class="container">
+        <h2 class="section-title">Popüler Oyunlar</h2>
+        <div class="games-grid">
+            <!-- Aktif Tombala Oyunu -->
+            <div class="game-card">
+                <div class="game-banner">
+                    🎱
+                    <span class="badge-live">CANLI YAYINDA</span>
+                </div>
+                <div class="game-info">
+                    <div>
+                        <h3>Canlı Tombala Salonu</h3>
+                        <p>Gerçek zamanlı çekilişler, farklı giriş odaları, 1. ve 2. Çinko heyecanıyla çok oyunculu klasik tombala deneyimi.</p>
+                    </div>
+                    <a href="/tombala" class="play-btn">Hemen Oyna</a>
+                </div>
+            </div>
+
+            <!-- Yakında Eklenecek Oyun Şablonu 1 -->
+            <div class="game-card">
+                <div class="game-banner" style="background: linear-gradient(45deg, #064e3b, #065f46);">
+                    🀄
+                    <span class="badge-soon">ÇOK YAKINDA</span>
+                </div>
+                <div class="game-info">
+                    <div>
+                        <h3>Klasik Okey</h3>
+                        <p>Arkadaşlarınızla veya diğer oyuncularla masaya oturun, taşları dizin ve okey keyfini canlı yaşayın.</p>
+                    </div>
+                    <a href="#" class="play-btn disabled">Hazırlanıyor</a>
+                </div>
+            </div>
+
+            <!-- Yakında Eklenecek Oyun Şablonu 2 -->
+            <div class="game-card">
+                <div class="game-banner" style="background: linear-gradient(45deg, #4c1d95, #5b21b6);">
+                    🃏
+                    <span class="badge-soon">ÇOK YAKINDA</span>
+                </div>
+                <div class="game-info">
+                    <div>
+                        <h3>İhaleli Batak & Pişti</h3>
+                        <p>Hızlı turlar ve akıllı eşleştirme sistemiyle klasik kağıt oyunları çok yakında salonumuzda.</p>
+                    </div>
+                    <a href="#" class="play-btn disabled">Hazırlanıyor</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p style="margin-bottom: 8px;">Bu platform tamamen ücretsiz ve eğlence amaçlıdır. Oyun içi puanların gerçek parasal değeri yoktur.</p>
+        <div>
+            <a href="/tombala">Tombala Oyna</a> |
+            <a href="mailto:sineneon16@gmail.com">İletişim: sineneon16@gmail.com</a>
+        </div>
+        <p style="margin-top: 8px; font-size: 11px;">© 2026 Online Oyun Salonu - Tüm Hakları Saklıdır.</p>
+    </footer>
+</body>
+</html>
