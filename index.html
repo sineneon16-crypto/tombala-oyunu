@@ -702,6 +702,10 @@
                 container.appendChild(cardDiv);
             });
         }
+        setupInitialCards();
+        socket.on('connect', () => {
+            syncPurchasedCardsWithServer();
+        });
     </script>
 </body>
 </html>
