@@ -495,7 +495,7 @@ function createPistiDeck() {
     return d;
 }
 
-function broadcastPistiState(room, msg = "") {
+function broadcastPistiState(room, msg = "", eventInfo = null) {
     room.players.forEach((p, idx) => {
         if (!p.isBot) {
             io.to(p.id).emit('pistiState', {
@@ -511,7 +511,8 @@ function broadcastPistiState(room, msg = "") {
                 deckCount: room.deck.length,
                 turnIndex: room.turnIndex,
                 totalScores: room.totalScores,
-                message: msg
+                message: msg,
+                eventInfo: eventInfo
             });
         }
     });
@@ -541,8 +542,8 @@ function dealPistiCards(room) {
             if (room.deck.length > 0) p.hand.push(room.deck.pop());
         });
     }
-    broadcastPistiState(room, `${room.title} | Sıra: ${room.players.at(room.turnIndex).name}`);
-    checkPistiBotTurn(room);
+    broadcastPistiState(room, `${room.title} | Sıra: ${room.players.at(room.turnIndex).name}`, { type: 'deal' });
+    setTimeout(() => { checkPistiBotTurn(room); }, 800);
 }
 
 function processPistiMove(room, playerIdx, cardIdx) {
@@ -552,6 +553,7 @@ function processPistiMove(room, playerIdx, cardIdx) {
 
     let playedCard = p.hand.splice(cardIdx, 1).at(0);
     let actionText = `${p.name} (${playedCard.value}${playedCard.suit}) attı.`;
+    let eventInfo = { type: 'play', byIndex: playerIdx, card: playedCard };
 
     if (room.pile.length > 0) {
         let topCard = room.pile.at(-1);
@@ -569,6 +571,7 @@ function processPistiMove(room, playerIdx, cardIdx) {
             room.lastCapturer = playerIdx;
             room.pile = new Array();
             actionText = isPisti ? `🔥 ${p.name} PİŞTİ YAPTI!` : `✨ ${p.name} yerdeki kartları topladı!`;
+            eventInfo = { type: 'capture', byIndex: playerIdx, card: playedCard, isPisti: isPisti };
         } else {
             room.pile.push(playedCard);
         }
@@ -578,13 +581,14 @@ function processPistiMove(room, playerIdx, cardIdx) {
 
     room.turnIndex = (room.turnIndex + 1) % room.maxPlayers;
     let allHandsEmpty = room.players.every(pl => pl.hand.length === 0);
+    let extraWait = (eventInfo.type === 'capture') ? 1200 : 0;
 
     if (allHandsEmpty) {
-        broadcastPistiState(room, actionText);
-        setTimeout(() => { dealPistiCards(room); }, 1600);
+        broadcastPistiState(room, actionText, eventInfo);
+        setTimeout(() => { dealPistiCards(room); }, 1800 + extraWait);
     } else {
-        broadcastPistiState(room, `${actionText} | Sıra: ${room.players.at(room.turnIndex).name}`);
-        checkPistiBotTurn(room);
+        broadcastPistiState(room, `${actionText} | Sıra: ${room.players.at(room.turnIndex).name}`, eventInfo);
+        setTimeout(() => { checkPistiBotTurn(room); }, extraWait);
     }
 }
 function checkPistiBotTurn(room) {
