@@ -20,7 +20,7 @@ function saveIpWallets() {
 
 function getClientIp(socket) {
     let forwarded = socket.handshake.headers['x-forwarded-for'];
-    let ip = forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address;
+    let ip = forwarded ? forwarded.split(',').at(0).trim() : socket.handshake.address;
     return ip || "127.0.0.1";
 }
 
