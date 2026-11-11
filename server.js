@@ -20,7 +20,7 @@ function saveIpWallets() {
 
 function getClientIp(socket) {
     let forwarded = socket.handshake.headers['x-forwarded-for'];
-    let ip = forwarded ? forwarded.split(',').trim() : socket.handshake.address;
+    let ip = forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address;
     return ip || "127.0.0.1";
 }
 
@@ -43,7 +43,7 @@ function generateSingleCard() {
         selectedCols.sort((a, b) => a - b);
         selectedCols.forEach(c => {
             let randIdx = Math.floor(Math.random() * colPools[c].length);
-            grid[r][c] = colPools[c].splice(randIdx, 1);
+            grid[r][c] = colPools[c].splice(randIdx, 1)[0];
         });
     }
     for (let c = 0; c < 9; c++) {
@@ -419,4 +419,4 @@ function processRoundClaims(fee) {
 
 getOrCreateRoom(1);
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => { console.log('Odalı Eşleştirmeli Tombala Sunucusu aktif! Port: ' + PORT); });
+http.listen(PORT, '0.0.0.0', () => { console.log('Odalı Eşleştirmeli Tombala Sunucusu aktif! Port: ' + PORT); });
