@@ -378,7 +378,7 @@ function startDrawLoop(fee) {
         });
 
         let num;
-        let hitChance = room.testMode ? 0.95 : 0.70;
+        let hitChance = room.testMode ? 0.95 : 0.20;
         if (activeCardNumbers.length > 0 && Math.random() < hitChance) {
             num = activeCardNumbers[Math.floor(Math.random() * activeCardNumbers.length)];
         } else {
