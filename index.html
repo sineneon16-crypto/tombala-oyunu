@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <!-- 💰 Google AdSense Ana Doğrulama ve Reklam Scripti -->
+    <script async src="https://googlesyndication.com" crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tombala Salonu - Mobil</title>
+    <script>
+        function confetti() {
+            const colors = ['#ffb703', '#fb5607', '#ff006e', '#00b4d8', '#38b000'];
+            for (let i = 0; i < 60; i++) {
+                const p = document.createElement('div');
+                p.style.cssText = `position:fixed;top:-10px;left:${Math.random()*100}vw;width:10px;height:10px;background:${colors[i%colors.length]};z-index:99999;border-radius:50%;pointer-events:none;transition:transform 2.2s linear,opacity 2.2s;`;
+                document.body.appendChild(p);
+                setTimeout(() => { p.style.transform = `translateY(105vh) rotate(${Math.random()*720}deg)`; p.style.opacity = '0'; }, 20);
+                setTimeout(() => p.remove(), 2300);
+            }
+        }
+    </script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0c1a30; color: #fff; margin: 0; padding: 0; text-align: center; -webkit-user-select: none; user-select: none; }
+        .top-header { background: #050d1a; padding: 12px; font-size: 24px; font-weight: bold; color: #ffb703; border-bottom: 2px solid #1e3d59; text-transform: uppercase; letter-spacing: 2px; }
+        .main-layout { display: flex; flex-direction: column; padding: 15px; gap: 15px; max-width: 1200px; margin: 0 auto; }
+        @media (min-width: 768px) { .main-layout { flex-direction: row; align-items: flex-start; } }
+        
+        .left-panel { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        @media (min-width: 768px) { .left-panel { width: 220px; } }
+        
+        .profile-card, .stats-card, .wallet-card { background: #112240; padding: 12px; border-radius: 8px; border: 1px solid #1e3d59; text-align: center; }
+        .wallet-card { border-color: #ffb703; }
+        .wallet-val { font-size: 20px; font-weight: bold; color: #4caf50; display: block; margin-top: 5px; }
+        
+        .lobby-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; }
+        @media (min-width: 768px) { .lobby-grid { grid-template-columns: 1fr; } }
+        .lobby-btn { background: #1e3d59; color: #fff; padding: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; text-align: center; transition: 0.2s; }
+        .lobby-btn.active { background: #ffb703; color: #000; }
+
+        /* 🛡️ Admin & Test Modu Stilleri */
+        .admin-open-btn { background: #1e3d59; color: #ffb703; border: 1px solid #ffb703; padding: 8px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; }
+        .admin-panel-box { background: #0a192f; border: 2px solid #fb5607; border-radius: 8px; padding: 10px; display: none; flex-direction: column; gap: 6px; text-align: left; }
+        .admin-panel-box.visible { display: flex; }
+        .admin-action-btn { background: #1e3d59; color: #fff; border: 1px solid #234e70; padding: 8px; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; }
+        .admin-action-btn.test-active { background: #d90429; border-color: #fff; animation: pulseBorder 1.2s infinite; }
+        @keyframes pulseBorder { 0% { box-shadow: 0 0 4px #d90429; } 50% { box-shadow: 0 0 12px #ffb703; } 100% { box-shadow: 0 0 4px #d90429; } }
+        /* 🎯 2'Lİ SIRA 4 ADET KART IZGARASI VE TEK KART ŞIK SUNUM MOTORU */
+        .card-container { 
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important; 
+            margin-top: 12px !important; 
+            max-width: 760px !important; 
+            width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            justify-items: center !important; 
+            align-items: center !important;
+        }
+        .card-container.single-card-showcase {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 15px 0 !important;
+        }
+        .tombala-card { background: #ffffff; border-radius: 8px; padding: 8px; box-shadow: 0 6px 12px rgba(0,0,0,0.4); position: relative; opacity: 0.45; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); width: 100%; box-sizing: border-box; cursor: pointer; }
+        .tombala-card.locked-card::after {
+            content: "🔒 KİLİTLİ (AÇMAK İÇİN DOKUN)";
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(5, 13, 26, 0.88); color: #ffb703; font-size: 10px; font-weight: bold;
+            padding: 5px 8px; border-radius: 6px; border: 1px solid #ffb703; pointer-events: none; white-space: nowrap; z-index: 5;
+        }
+        .tombala-card.active-card { opacity: 1 !important; transform: scale(1.01); }
+        .tombala-card.single-featured {
+            max-width: 440px !important;
+            width: 95% !important;
+            padding: 16px !important;
+            box-shadow: 0 0 28px rgba(255, 183, 3, 0.85), 0 10px 25px rgba(0,0,0,0.7) !important;
+            animation: cardEntrancePop 0.65s ease-out forwards;
+        }
+        @keyframes cardEntrancePop {
+            0% { transform: scale(0.75) translateY(15px); opacity: 0.3; }
+            60% { transform: scale(1.05) translateY(-3px); opacity: 1; }
+            100% { transform: scale(1.02) translateY(0); opacity: 1; }
+        }
+        .refresh-card-text-btn { position: absolute; top: -12px; right: 5px; background: #0c1a30; color: #ffb703; border: 1px solid #ffb703; font-size: 9px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; z-index: 6; }
+        /* 🔮 1-90 ARASI DÜZENLİ SABİT TOMBALA PANOSU STİLLERİ */
+        .ball-display-container { display: grid !important; grid-template-columns: repeat(10, 1fr) !important; gap: 3px !important; background: #0a192f; padding: 8px; border-radius: 6px; border: 1px solid #1e3d59; max-width: 100%; box-sizing: border-box; }
+        .tombala-ball { width: 20px; height: 20px; background: #1e3d59; color: #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; transition: all 0.35s ease; margin: 0 auto; }
+        .tombala-ball.active-pano-ball { background: radial-gradient(circle at 30% 30%, #fff176, #ff9800) !important; color: #000 !important; box-shadow: 0 0 8px #ffb703, 0 0 14px #ff9800; transform: scale(1.12); border: 1px solid #fff; }
+        
+        /* 🔴 ANİMASYONLU SON 5 SAYI ŞERİDİ */
+        .live-stream-bar { background: #050d1a; padding: 10px; border-radius: 8px; border: 1px solid #1e3d59; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; overflow: hidden; margin-bottom: 5px; position: relative; }
+        .stream-ball { width: 34px; height: 34px; background: radial-gradient(circle at 30% 30%, #ffffff, #ffb703); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; flex-shrink: 0; transition: all 0.3s ease; }
+        .stream-ball.hot-new { background: radial-gradient(circle at 30% 30%, #ff4d6d, #d90429); color: #fff; box-shadow: 0 0 14px #d90429, 0 0 6px #ffffff; border: 2px solid #fff; animation: slideInBall 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes slideInBall {
+            0% { transform: translateX(45px) scale(0.4); opacity: 0; }
+            70% { transform: translateX(-4px) scale(1.18); opacity: 1; }
+            100% { transform: translateX(0) scale(1.12); opacity: 1; }
+        }
+        .center-panel { flex: 1; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .buy-hint { font-size: 12px; font-weight: bold; color: #ffb703; background: #112240; padding: 8px; border-radius: 6px; border: 1px dashed #ffb703; }
+        .chat-container { background: #112240; border-radius: 8px; border: 1px solid #1e3d59; padding: 12px; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .chat-flow { height: 130px; overflow-y: auto; text-align: left; font-size: 13px; display: flex; flex-direction: column; gap: 5px; }
+        .chat-input-row { display: flex; gap: 8px; }
+        .chat-input-row input { flex: 1; background: #0a192f; border: 1px solid #1e3d59; padding: 10px; border-radius: 6px; color: #fff; outline: none; font-size: 14px; }
+        .chat-send-btn { background: #4caf50; color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        .card-c-0 { border: 3px solid #d90429; } .card-c-1 { border: 3px solid #00b4d8; }
+        .card-c-2 { border: 3px solid #38b000; } .card-c-3 { border: 3px solid #7209b7; }
+        .tombala-table { width: 100%; border-collapse: collapse; background: #fff; table-layout: fixed; }
+        .tombala-table td { width: 11.11%; height: 28px; border: 1px solid #ccc; text-align: center; font-size: 13px; font-weight: bold; color: #000; padding: 0; }
+        .single-featured .tombala-table td { height: 42px; font-size: 18px; }
+        
+        .card-c-0 td { border-color: rgba(217, 4, 41, 0.25); } .card-c-1 td { border-color: rgba(0, 180, 216, 0.25); }
+        .card-c-2 td { border-color: rgba(56, 176, 0, 0.25); } .card-c-3 td { border-color: rgba(114, 9, 183, 0.25); }
+        .tombala-table td.empty-cell { background: #e5e5e5; }
+        .tombala-table td.user-marked { background: #ffeb3b !important; color: #000 !important; box-shadow: inset 0 0 4px #d90429; }
+        
+        .right-panel { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        @media (min-width: 768px) { .right-panel { width: 250px; } }
+        .action-btn { background: #1e3d59; color: #fff; padding: 12px; border-radius: 6px; border: 1px solid #234e70; cursor: not-allowed; font-weight: bold; font-size: 14px; opacity: 0.3; text-transform: uppercase; width: 100%; }
+        .action-btn.btn-active { background: #ffb703 !important; color: #000 !important; cursor: pointer !important; opacity: 1 !important; box-shadow: 0 0 10px #ffb703; }
+        .action-btn.bingo-style.btn-active { background: #fb5607 !important; color: #fff !important; box-shadow: 0 0 12px #fb5607; }
+        .info-box { background: #112240; border-radius: 8px; border: 1px solid #1e3d59; padding: 10px; text-align: center; }
+        .info-box-title { font-size: 11px; color: #ffb703; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; display: block; }
+    </style>
+</head>
+<body>
+    <!-- 🛡️ Şık Sayfa İçi Admin Şifre Kutusu -->
+    <div id="adminLoginModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(5,13,26,0.88); z-index:99999; align-items:center; justify-content:center;">
+        <div style="background:#112240; border:2px solid #ffb703; border-radius:12px; padding:24px; width:88%; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.8); text-align:center;">
+            <div style="color:#ffb703; font-size:18px; font-weight:bold; margin-bottom:6px;">🛡️ ADMİN GİRİŞİ</div>
+            <div style="color:#8892b0; font-size:12px; margin-bottom:15px;">Yönetici ve test modunu açmak için şifrenizi girin.</div>
+            <input type="password" id="adminPasswordInput" placeholder="Admin şifresi..." style="width:100%; box-sizing:border-box; padding:11px; border-radius:6px; border:1px solid #234e70; background:#0a192f; color:#fff; font-size:15px; text-align:center; outline:none; margin-bottom:8px;">
+            <div id="adminErrorText" style="color:#ff4d6d; font-size:12px; font-weight:bold; min-height:16px; margin-bottom:10px;"></div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="closeAdminModal()" style="flex:1; padding:10px; border:none; border-radius:6px; background:#1e3d59; color:#fff; font-weight:bold; cursor:pointer;">İptal</button>
+                <button onclick="submitAdminPassword()" style="flex:1; padding:10px; border:none; border-radius:6px; background:#ffb703; color:#000; font-weight:bold; cursor:pointer;">Giriş Yap</button>
+            </div>
+        </div>
+    </div>
+    <!-- 📺 Gerçek Google AdSense Ödüllü Reklam Penceresi -->
+    <div id="adsenseRewardModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(5,13,26,0.92); z-index:99998; align-items:center; justify-content:center;">
+        <div style="background:#112240; border:2px solid #4caf50; border-radius:12px; padding:20px; width:92%; max-width:380px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.85);">
+            <div style="color:#ffb703; font-size:16px; font-weight:bold; margin-bottom:5px;">📺 SPONSORLU REKLAM</div>
+            <div style="color:#8892b0; font-size:12px; margin-bottom:12px;">Ödülünüzün (+10 Bakiye) tanımlanması için lütfen bekleyin.</div>
+            
+            <!-- Gerçek AdSense Reklam Alanı -->
+            <div id="adSlotContainer" style="min-height:250px; background:#0a192f; border:1px dashed #234e70; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; overflow:hidden;">
+                <ins class="adsbygoogle"
+                     style="display:block; width:300px; height:250px;"
+                     data-ad-client="ca-pub-2321916997699151"
+                     data-ad-slot="7513219899"></ins>
+            </div>
+
+            <div id="adCountdownLabel" style="color:#4caf50; font-size:15px; font-weight:bold;">Kalan Süre: 60 saniye</div>
+        </div>
+    </div>
+        <div class="top-header" onclick="secretAdminTap()">TOMBALA SALONU</div>
+    <div class="main-layout">
+        
+        <!-- SOL PANEL -->
+        <div class="left-panel">
+            <div class="profile-card">
+                <span id="displayUserName" style="font-weight: bold; color: #8892b0; font-size: 13px;">Misafir Bağlanıyor...</span><br>
+                <span id="userRoleBadge" style="font-size: 11px; color: #4caf50; font-weight: bold;">MİSAFİR OYUNCU (IP KAYITLI)</span>
+            </div>
+            <div class="stats-card">
+                <span style="color: #ffb703; font-weight: bold; display: block; margin-bottom: 5px;">TURNUVA ÖDÜLÜ</span>
+                🏅 1.Çinko: <span id="prizeC1">0</span> | 🥈 2.Çinko: <span id="prizeC2">0</span> | 🏆 Tombala: <span id="prizeBingo">0</span>
+            </div>
+            <div class="wallet-card">
+                <span style="color:#8892b0; font-size:12px; font-weight:bold;">HESAP DURUMU</span>
+                <span class="wallet-val">Bakiye: <span id="userWallet">40</span></span>
+            </div>
+            <div class="lobby-grid">
+                <button class="lobby-btn active" id="lobbyBtn1" onclick="changeLobby(1)">LOBİ 1</button>
+                <button class="lobby-btn" id="lobbyBtn5" onclick="changeLobby(5)">LOBİ 5</button>
+                <button class="lobby-btn" id="lobbyBtn10" onclick="changeLobby(10)">LOBİ 10</button>
+                <button class="lobby-btn" id="lobbyBtn100" onclick="changeLobby(100)">LOBİ 100</button>
+            </div>
+                        <button class="admin-open-btn" id="adminToggleBtn" style="display:none;" onclick="promptAdminLogin()">🛡️ Admin / Test Modu</button>
+            <div class="admin-panel-box" id="adminPanelBox">
+                <div style="font-size:11px; color:#fb5607; font-weight:bold; text-align:center;">⚙️ YÖNETİCİ & TEST KONTROLÜ</div>
+                <button class="admin-action-btn" id="btnToggleTestMode" onclick="adminToggleTestMode()">🧪 Test Modu: KAPALI</button>
+                <button class="admin-action-btn" onclick="adminForceStart()">⚡ Oyunu Hemen Başlat</button>
+                <button class="admin-action-btn" onclick="adminAddTestCoins()">💰 +100 Test Bakiyesi Ekle</button>
+                <button class="admin-action-btn" onclick="adminForceReset()">🛑 Aktif Turu Sıfırla</button>
+            </div>
+        </div>
+        <!-- ORTA PANEL -->
+        <div class="center-panel">
+           <div class="live-stream-bar" id="liveStreamBar">
+            <span style="color: #ffb703; font-size: 14px; font-weight: bold; letter-spacing: 0.5px;">⏳ Oyun Başlıyor! Kart Seçimi Yapın...</span>
+            </div>
+            <div id="lobbyStatus" style="font-size: 15px; color: #00ffcc; font-weight: bold;">Lobi bekleniyor...</div>
+            <div id="cardBuyHint" class="buy-hint">🔒 Kartlar kilitli! Satın almak istediğiniz karta dokunun (Her kart bahis tutarı kadardır).</div>
+            <div>
+                <div id="cardsArea" class="card-container"></div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-flow" id="chatBox"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="Mesaj yazın...">
+                    <button class="chat-send-btn" id="sendMsgBtn">Gönder</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAĞ PANEL -->
+        <div class="right-panel">
+            <div class="info-box">
+                <span class="info-box-title">Bahis Miktarı</span>
+                <span id="currentBet" style="font-size: 16px; font-weight: bold;">1</span>
+            </div>
+            <button class="action-btn" id="claimC1Btn" disabled>1.Çinko</button>
+            <button class="action-btn" id="claimC2Btn" disabled>2.Çinko</button>
+            <button class="action-btn bingo-style" id="claimBingoBtn" disabled>Tombala</button>
+            <div class="info-box">
+                <span class="info-box-title">🔮 Çıkan Sayılar (1 - 90)</span>
+                <div class="ball-display-container" id="drawnNumbersList"></div>
+            </div>
+            <button class="action-btn" style="background:#4caf50; opacity:1; cursor:pointer;" id="watchAdBtn">📺 Reklam İzle (+10)</button>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let myId = ""; let currentFee = 1; let isGameActiveGlobal = false;
+        let computedCardsGridMemory = [];
+        let userMarkedCellsMemory = Array.from({length: 4}, () => Array.from({length: 3}, () => Array(9).fill(false)));
+        let purchasedCardsState = [false, false, false, false];
+        let drawnNumbersGlobal = [];
+        let activeRoundStage = 1;
+        let fakeClickCounter = 0;
+        let myWallet = 40;
+        let isAdminAuthenticated = false;
+        let isTestModeEnabled = false;
+
+        // 🛡️ Doğrudan Misafir Kimliği Oluşturma
+        let guestName = localStorage.getItem('tombala_guest_name');
+        if (!guestName) {
+            guestName = "Misafir_" + Math.floor(Math.random() * 900 + 100);
+            localStorage.setItem('tombala_guest_name', guestName);
+        }
+        document.getElementById('displayUserName').innerText = guestName;
+
+        function updateWalletDisplay(value) {
+            myWallet = parseInt(value);
+            if (isNaN(myWallet) || myWallet < 0) myWallet = 0;
+            document.getElementById('userWallet').innerText = myWallet;
+        }
+        // 🛡️ Admin Girişi ve Test Modu Fonksiyonları
+                let secretTapCount = 0;
+        let secretTapTimer = null;
+
+        function secretAdminTap() {
+            secretTapCount++;
+            clearTimeout(secretTapTimer);
+            secretTapTimer = setTimeout(() => { secretTapCount = 0; }, 1500);
+            if (secretTapCount >= 5) {
+                secretTapCount = 0;
+                promptAdminLogin();
+            }
+        }
+
+        function promptAdminLogin() {
+            if (isAdminAuthenticated) {
+                document.getElementById('adminPanelBox').classList.toggle('visible');
+                return;
+            }
+            document.getElementById('adminErrorText').innerText = "";
+            document.getElementById('adminPasswordInput').value = "";
+            document.getElementById('adminLoginModal').style.display = "flex";
+            setTimeout(() => { document.getElementById('adminPasswordInput').focus(); }, 100);
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminLoginModal').style.display = "none";
+        }
+
+        function submitAdminPassword() {
+            const pass = document.getElementById('adminPasswordInput').value;
+            if (!pass || pass.trim() === "") {
+                document.getElementById('adminErrorText').innerText = "Lütfen şifre girin!";
+                return;
+            }
+            socket.emit('adminLogin', { password: pass.trim() });
+        }
+
+        document.getElementById('adminPasswordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitAdminPassword();
+        });
+
+        if (window.location.search.includes('admin=1')) {
+            window.addEventListener('DOMContentLoaded', () => { promptAdminLogin(); });
+        }
+
+        socket.on('adminAuthResult', (data) => {
+            if (data.success) {
+                isAdminAuthenticated = true;
+                closeAdminModal();
+                updateWalletDisplay(999999);
+                document.getElementById('adminToggleBtn').style.display = 'block';
+                document.getElementById('adminPanelBox').classList.add('visible');
+                document.getElementById('userRoleBadge').innerText = "🛡️ ADMİN & SINIRSIZ TEST";
+                document.getElementById('userRoleBadge').style.color = "#ffb703";
+            } else {
+                document.getElementById('adminErrorText').innerText = "❌ Hatalı şifre, tekrar deneyin!";
+                document.getElementById('adminPasswordInput').value = "";
+                document.getElementById('adminPasswordInput').focus();
+            }
+        });
+
+        function adminToggleTestMode() {
+            if (!isAdminAuthenticated) return;
+            isTestModeEnabled = !isTestModeEnabled;
+            socket.emit('adminCommand', { action: 'toggleTestMode', enabled: isTestModeEnabled });
+        }
+
+        socket.on('testModeStatus', (data) => {
+            isTestModeEnabled = data.enabled;
+            const btn = document.getElementById('btnToggleTestMode');
+            if (isTestModeEnabled) {
+                btn.innerText = "🧪 Test Modu: AÇIK (Hızlı)";
+                btn.classList.add('test-active');
+            } else {
+                btn.innerText = "🧪 Test Modu: KAPALI";
+                btn.classList.remove('test-active');
+            }
+        });
+
+        function adminForceStart() { if (isAdminAuthenticated) socket.emit('adminCommand', { action: 'forceStart' }); }
+        function adminAddTestCoins() { if (isAdminAuthenticated) socket.emit('adminCommand', { action: 'addCoins', amount: 100 }); }
+        function adminForceReset() { if (isAdminAuthenticated) socket.emit('adminCommand', { action: 'forceReset' }); }
+        function syncPurchasedCardsWithServer() {
+            let selectedFlatCards = [];
+            purchasedCardsState.forEach((isBought, idx) => {
+                if (isBought && computedCardsGridMemory[idx]) {
+                    let flat = [];
+                    for (let i = 0; i < 3; i++) {
+                        for (let j = 0; j < 9; j++) {
+                            flat.push(computedCardsGridMemory[idx][i][j]);
+                        }
+                    }
+                    selectedFlatCards.push(flat.join(","));
+                }
+            });
+            while (selectedFlatCards.length < 4) {
+                selectedFlatCards.push(Array(27).fill(0).join(","));
+            }
+            let totalSelected = purchasedCardsState.filter(Boolean).length;
+            socket.emit('setCardCount', { count: totalSelected, wallet: myWallet });
+            socket.emit('syncCardsToServer', { cards: selectedFlatCards, wallet: myWallet });
+        }
+
+                function togglePurchaseCard(cardIndex) {
+            if (isGameActiveGlobal) return;
+            if (!purchasedCardsState[cardIndex]) {
+                if (isAdminAuthenticated) {
+                    purchasedCardsState[cardIndex] = true;
+                } else if (myWallet >= currentFee) { 
+                    updateWalletDisplay(myWallet - currentFee); 
+                    purchasedCardsState[cardIndex] = true; 
+                } else { 
+                    alert("Bakiyeniz bitti! Sağ alttaki '📺 Reklam İzle' butonuna basarak +10 bakiye kazanabilirsiniz."); 
+                    return; 
+                }
+            } else {
+                if (!isAdminAuthenticated) {
+                    updateWalletDisplay(myWallet + currentFee); 
+                }
+                purchasedCardsState[cardIndex] = false;
+            }
+            syncPurchasedCardsWithServer();
+            renderCards(false);
+        }
+
+        function changeCardNumbers(event, cardIndex) {
+            event.stopPropagation(); 
+            if (isGameActiveGlobal) return;
+            computedCardsGridMemory[cardIndex] = generatePerfectTombalaGrid();
+            userMarkedCellsMemory[cardIndex] = Array.from({length: 3}, () => Array(9).fill(false)); 
+            syncPurchasedCardsWithServer();
+            renderCards(false);
+        }
+
+        function toggleMarkCell(cardIndex, rowIndex, colIndex, cellValue) {
+            if (!isGameActiveGlobal || !purchasedCardsState[cardIndex] || cellValue === 0) return;
+            if (!drawnNumbersGlobal.includes(String(cellValue))) { 
+                fakeClickCounter++;
+                if (fakeClickCounter >= 3) {
+                    fakeClickCounter = 0;
+                    triggerPenaltyAdMode();
+                }
+                return;
+            }
+            fakeClickCounter = 0;
+            userMarkedCellsMemory[cardIndex][rowIndex][colIndex] = !userMarkedCellsMemory[cardIndex][rowIndex][colIndex];
+            renderCards(false); 
+            checkAndActivateAwardButtons();
+        }
+        function triggerPenaltyAdMode() {
+            let btn = document.getElementById('watchAdBtn'); if (btn.disabled) return;
+            document.getElementById('lobbyStatus').innerHTML = `<span style="color:#d90429; font-weight:bold;">⚠️ CEZA KİLİDİ: Üst Üste 3 Sahte Tıklama! Reklam İzleniyor...</span>`;
+            btn.disabled = true; btn.style.background = "#555"; btn.innerText = "📺 Ceza Reklamı...";
+            let timeLeft = 60;
+            let adInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(adInterval); btn.disabled = false; btn.style.background = "#4caf50"; btn.innerText = "📺 Reklam İzle (+10)";
+                    document.getElementById('lobbyStatus').innerText = "Oyun Aktif, Sayılar Çekiliyor...";
+                    alert("Ceza süreniz bitti!");
+                }
+            }, 1000);
+        }
+
+        function checkAndActivateAwardButtons() {
+            let maxLinesCompleted = 0;
+            purchasedCardsState.forEach((bought, cardIdx) => {
+                if (!bought) return;
+                let cardGrid = computedCardsGridMemory[cardIdx];
+                let markedGrid = userMarkedCellsMemory[cardIdx];
+                let linesDoneOnCard = 0;
+                for (let i = 0; i < 3; i++) {
+                    let requiredNumbers = 0; let matchedNumbers = 0;
+                    for (let j = 0; j < 9; j++) {
+                        let val = cardGrid[i][j];
+                        if (val !== 0) { 
+                            requiredNumbers++; 
+                            if (drawnNumbersGlobal.includes(String(val)) && markedGrid[i][j] === true) matchedNumbers++; 
+                        }
+                    }
+                    if (requiredNumbers > 0 && matchedNumbers === requiredNumbers) linesDoneOnCard++;
+                }
+                if (linesDoneOnCard > maxLinesCompleted) maxLinesCompleted = linesDoneOnCard;
+            });
+
+            let b1 = document.getElementById('claimC1Btn'); let b2 = document.getElementById('claimC2Btn'); let bb = document.getElementById('claimBingoBtn');
+            b1.className = "action-btn"; b1.disabled = true; b2.className = "action-btn"; b2.disabled = true; bb.className = "action-btn"; bb.disabled = true;
+
+            if (activeRoundStage === 1 && maxLinesCompleted >= 1) { b1.classList.add('btn-active'); b1.disabled = false; }
+            if (activeRoundStage === 2 && maxLinesCompleted >= 2) { b2.classList.add('btn-active'); b2.disabled = false; }
+            if (activeRoundStage === 3 && maxLinesCompleted === 3) { bb.classList.add('btn-active'); bb.disabled = false; }
+        }
+
+        document.getElementById('claimC1Btn').addEventListener('click', () => { socket.emit('claimAward', { type: 1 }); });
+        document.getElementById('claimC2Btn').addEventListener('click', () => { socket.emit('claimAward', { type: 2 }); });
+        document.getElementById('claimBingoBtn').addEventListener('click', () => { 
+            let audio = new Audio('alkis.mp3'); audio.play().catch(e=>{});
+            if (typeof confetti === 'function') { confetti(); }
+            socket.emit('claimAward', { type: 3 }); 
+        });
+
+        socket.on('init', (data) => {
+            myId = data.id; 
+            updateWalletDisplay(data.wallet);
+            socket.emit('setPlayerName', { name: guestName });
+            if (data.welcomeMsg) {
+                const msg = document.createElement('div');
+                msg.innerHTML = `<span style="color: #4caf50; font-weight: bold;">🎁 SİSTEM:</span> ${data.welcomeMsg}`;
+                document.getElementById('chatBox').appendChild(msg);
+            }
+            setupInitialCards();
+            syncPurchasedCardsWithServer();
+        });
+
+        socket.on('walletUpdated', (data) => {
+            if (data && data.wallet !== undefined) {
+                updateWalletDisplay(data.wallet);
+            }
+        });
+        function setupInitialCards() {
+            computedCardsGridMemory = [];
+            userMarkedCellsMemory = Array.from({length: 4}, () => Array.from({length: 3}, () => Array(9).fill(false)));
+            for(let i = 0; i < 4; i++) computedCardsGridMemory.push(generatePerfectTombalaGrid());
+            renderCards(false);
+        }
+
+        socket.on('gameStarted', (data) => {
+            isGameActiveGlobal = true; activeRoundStage = 1; fakeClickCounter = 0;
+            let boughtCount = purchasedCardsState.filter(Boolean).length;
+            if (boughtCount === 0) {
+                document.getElementById('lobbyStatus').innerHTML = `<span style="color:#ffb703;">👀 Kart seçmediniz, bu eli izleyici olarak takip ediyorsunuz.</span>`;
+            } else {
+                document.getElementById('lobbyStatus').innerText = "Oyun Aktif, Sayılar Çekiliyor...";
+            }
+            document.getElementById('prizeC1').innerText = data.linePrize; 
+            document.getElementById('prizeC2').innerText = data.linePrize; 
+            document.getElementById('prizeBingo').innerText = data.bingoPrize;
+            document.getElementById('cardBuyHint').style.display = 'none';
+            drawnNumbersGlobal = []; 
+            document.getElementById('liveStreamBar').innerHTML = ""; 
+            buildStatic1To90Pano(); 
+            renderCards(true);
+        });
+        socket.on('lobbyCountdown', (count) => { 
+            isGameActiveGlobal = false; 
+            document.getElementById('lobbyStatus').innerText = "Yeni oyunun başlamasına: " + count + " saniye (Kartlarınızı seçin!)"; 
+        });
+        
+        socket.on('numberDrawn', (data) => {
+            drawnNumbersGlobal = data.history.map(s => String(s).trim());
+            const streamContainer = document.getElementById('liveStreamBar');
+            streamContainer.innerHTML = "";
+            
+            let last5Numbers = data.history.slice(-5);
+            last5Numbers.forEach((num, idx) => {
+                const ball = document.createElement('div'); 
+                ball.className = "stream-ball"; 
+                ball.innerText = num;
+                if(idx === last5Numbers.length - 1) ball.classList.add('hot-new');
+                streamContainer.appendChild(ball);
+            });
+            
+            for(let n = 1; n <= 90; n++) {
+                let panoBallElement = document.getElementById('pano-ball-' + n);
+                if (panoBallElement) {
+                    if (drawnNumbersGlobal.includes(String(n))) panoBallElement.classList.add('active-pano-ball');
+                    else panoBallElement.classList.remove('active-pano-ball');
+                }
+            }
+            checkAndActivateAwardButtons(); 
+        });
+
+        function buildStatic1To90Pano() {
+            const boxContainer = document.getElementById('drawnNumbersList'); boxContainer.innerHTML = "";
+            for(let n = 1; n <= 90; n++) {
+                const panoBall = document.createElement('div'); panoBall.className = "tombala-ball";
+                panoBall.id = 'pano-ball-' + n; panoBall.innerText = n; boxContainer.appendChild(panoBall);
+            }
+        }
+        socket.on('onlineCinko', (data) => {
+            if (data.type === 1 && activeRoundStage === 1) activeRoundStage = 2; 
+            if (data.type === 2 && activeRoundStage === 2) activeRoundStage = 3; 
+            checkAndActivateAwardButtons();
+            const msg = document.createElement('div'); msg.innerHTML = `<span style="color: #ffb703; font-weight: bold;">🔔 ${data.name}:</span> ${data.type}. Çinkoyu Yaptı!`;
+            document.getElementById('chatBox').appendChild(msg);
+            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+        });
+
+        socket.on('onlineBingo', (data) => {
+            isGameActiveGlobal = false;
+            if (data.winnerId === myId) { 
+                updateWalletDisplay(data.updatedWallet); 
+                if (typeof confetti === 'function') { confetti(); }
+            }
+            document.getElementById('lobbyStatus').innerHTML = `<span style="color:#ff5722; font-weight:bold;">🏆 TOMBALA YAPILDI! Kazanan: ${data.winner} (+${data.prize}). Yeni Oyun: 5 sn</span>`;
+            setTimeout(() => {
+                purchasedCardsState = [false, false, false, false]; activeRoundStage = 1; fakeClickCounter = 0;
+                document.getElementById('cardBuyHint').style.display = 'block'; 
+                setupInitialCards();
+                syncPurchasedCardsWithServer();
+              document.getElementById('liveStreamBar').innerHTML = `<span style="color: #ffb703; font-size: 14px; font-weight: bold; letter-spacing: 0.5px;">⏳ Oyun Başlıyor! Kart Seçimi Yapın...</span>`;
+              buildStatic1To90Pano();
+            }, 5000);
+        });
+
+        function changeLobby(fee) {
+            if (isGameActiveGlobal) { alert("Oyun devam ederken lobi değiştiremezsiniz!"); return; }
+            let totalSelected = purchasedCardsState.filter(Boolean).length; 
+            updateWalletDisplay(myWallet + (totalSelected * currentFee));
+            purchasedCardsState = [false, false, false, false]; 
+            currentFee = fee; 
+            document.getElementById('currentBet').innerText = fee;
+            document.querySelectorAll('.lobby-btn').forEach(b => b.classList.remove('active'));
+            let activeBtn = document.getElementById('lobbyBtn' + fee);
+            if(activeBtn) activeBtn.classList.add('active');
+            drawnNumbersGlobal = []; 
+            buildStatic1To90Pano();
+            document.getElementById('liveStreamBar').innerHTML = `<span style="color: #ffb703; font-size: 14px; font-weight: bold; letter-spacing: 0.5px;">⏳ Oyun Başlıyor! Kart Seçimi Yapın...</span>`;
+            socket.emit('setEntryFee', { fee: fee });
+            syncPurchasedCardsWithServer();
+            renderCards(false);
+        }
+                document.getElementById('watchAdBtn').addEventListener('click', () => {
+            let btn = document.getElementById('watchAdBtn'); 
+            if (btn.disabled) return;
+
+            btn.disabled = true; 
+            btn.style.background = "#555"; 
+            btn.innerText = "📺 Reklam Açık...";
+
+            const adModal = document.getElementById('adsenseRewardModal');
+            const adLabel = document.getElementById('adCountdownLabel');
+            adModal.style.display = "flex";
+
+            // Google AdSense reklamını tetikle
+            try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+
+            let timeLeft = isTestModeEnabled ? 5 : 60;
+            adLabel.innerText = "Kalan Süre: " + timeLeft + " saniye";
+
+            let adInterval = setInterval(() => {
+                timeLeft--;
+                adLabel.innerText = "Kalan Süre: " + timeLeft + " saniye";
+                if (timeLeft <= 0) {
+                    clearInterval(adInterval);
+                    adModal.style.display = "none";
+                    btn.disabled = false; 
+                    btn.style.background = "#4caf50"; 
+                    btn.innerText = "📺 Reklam İzle (+10)";
+                    socket.emit('adRewardClaimed');
+                }
+            }, 1000);
+        });
+
+        document.getElementById('sendMsgBtn').addEventListener('click', () => { const txt = document.getElementById('chatInput').value; if(txt.trim() !== "") { socket.emit('sendMessage', txt); document.getElementById('chatInput').value = ""; } });
+        document.getElementById('chatInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') document.getElementById('sendMsgBtn').click(); });
+        socket.on('receiveMessage', (data) => { const p = document.createElement('div'); p.innerHTML = `<strong>${data.sender}:</strong> ${data.text}`; document.getElementById('chatBox').appendChild(p); document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight; });
+        buildStatic1To90Pano();
+
+        function generatePerfectTombalaGrid() {
+            let grid = Array.from({ length: 3 }, () => Array(9).fill(0));
+            let colPools = Array.from({ length: 9 }, (_, i) => {
+                let min = i * 10 + 1; let max = i * 10 + 9;
+                if (i === 0) min = 1; if (i === 8) max = 90;
+                let pool = []; for (let n = min; n <= max; n++) pool.push(n);
+                return pool;
+            });
+            for (let r = 0; r < 3; r++) {
+                let selectedCols = [];
+                while (selectedCols.length < 5) {
+                    let c = Math.floor(Math.random() * 9);
+                    if (!selectedCols.includes(c) && colPools[c].length > 0) selectedCols.push(c);
+                }
+                selectedCols.sort((a, b) => a - b);
+                selectedCols.forEach(c => {
+                    let randIdx = Math.floor(Math.random() * colPools[c].length);
+                    grid[r][c] = colPools[c].splice(randIdx, 1);
+                });
+            }
+            for (let c = 0; c < 9; c++) {
+                let activeCells = [];
+                for (let r = 0; r < 3; r++) { if (grid[r][c] > 0) activeCells.push({ r: r, val: grid[r][c] }); }
+                activeCells.sort((a, b) => a.val - b.val);
+                activeCells.forEach((cell, index) => { grid[cell.r][c] = activeCells[index].val; });
+            }
+            return grid;
+        }
+        function renderCards(playEntranceAnim = false) {
+            const container = document.getElementById('cardsArea'); 
+            container.innerHTML = "";
+            let boughtCount = purchasedCardsState.filter(Boolean).length;
+
+            if (isGameActiveGlobal && boughtCount === 1) {
+                container.classList.add('single-card-showcase');
+            } else {
+                container.classList.remove('single-card-showcase');
+            }
+
+            computedCardsGridMemory.forEach((grid, cardIdx) => {
+                if (isGameActiveGlobal && !purchasedCardsState[cardIdx]) return;
+
+                const cardDiv = document.createElement('div'); 
+                cardDiv.className = `tombala-card card-c-${cardIdx}`;
+
+                if (purchasedCardsState[cardIdx]) {
+                    cardDiv.classList.add('active-card');
+                    if (isGameActiveGlobal && boughtCount === 1) {
+                        cardDiv.classList.add('single-featured');
+                        if (!playEntranceAnim) {
+                            cardDiv.style.animation = "none";
+                            cardDiv.style.transform = "scale(1.02)";
+                        }
+                    }
+                } else {
+                    cardDiv.classList.add('locked-card');
+                }
+
+                if (!isGameActiveGlobal) {
+                    cardDiv.setAttribute('onclick', `togglePurchaseCard(${cardIdx})`);
+                    if (purchasedCardsState[cardIdx]) {
+                        const refreshBtn = document.createElement('button'); 
+                        refreshBtn.className = "refresh-card-text-btn";
+                        refreshBtn.innerHTML = "🔄 Değiştir"; 
+                        refreshBtn.setAttribute('onclick', `changeCardNumbers(event, ${cardIdx})`);
+                        cardDiv.appendChild(refreshBtn);
+                    }
+                }
+
+                const table = document.createElement('table'); 
+                table.className = "tombala-table";
+                for (let i = 0; i < 3; i++) {
+                    const row = document.createElement('tr');
+                    for (let j = 0; j < 9; j++) {
+                        const cell = document.createElement('td'); 
+                        const cellValue = grid[i][j];
+                        if (cellValue === 0) { 
+                            cell.className = "empty-cell"; 
+                            cell.innerText = ""; 
+                        } else {
+                            cell.innerText = cellValue;
+                            cell.setAttribute('onclick', `event.stopPropagation(); if(!isGameActiveGlobal){ togglePurchaseCard(${cardIdx}); } else { toggleMarkCell(${cardIdx}, ${i}, ${j}, ${cellValue}); }`);
+                            if (userMarkedCellsMemory[cardIdx][i][j] === true) cell.classList.add('user-marked');
+                        }
+                        row.appendChild(cell);
+                    }
+                    table.appendChild(row);
+                }
+                cardDiv.appendChild(table); 
+                container.appendChild(cardDiv);
+            });
+        }
+    </script>
+</body>
+</html>
