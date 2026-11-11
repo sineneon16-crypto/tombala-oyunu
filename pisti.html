@@ -47,19 +47,20 @@
     <div class="top-bar">
         <a href="/" class="back-btn">← Salon</a>
         <div class="scoreboard">
-            <div class="score-box">1-3 Takımı Pişti: <span id="t1Score">0</span></div>
-            <div class="score-box">2-4 Takımı Pişti: <span id="t2Score">0</span></div>
+            <div class="score-box" id="scoreLabel1">1. Taraf: <span id="t1Score">0</span></div>
+            <div class="score-box" id="scoreLabel2">2. Taraf: <span id="t2Score">0</span></div>
+            <div class="score-box" style="border-color:#fbbf24;">Hedef: <span id="targetDisplay">101</span></div>
         </div>
     </div>
 
     <div class="table-grid">
         <div class="seat-top">
-            <div class="player-tag" id="tagTop">Ortak Bekleniyor</div>
+            <div class="player-tag" id="tagTop">Üst Oyuncu</div>
             <div class="hand" id="handTop"></div>
         </div>
 
-        <div class="seat-left">
-            <div class="player-tag" id="tagLeft">Rakip 1</div>
+        <div class="seat-left" id="seatLeftBox">
+            <div class="player-tag" id="tagLeft">Sol Rakip</div>
             <div class="side-hand" id="handLeft"></div>
         </div>
 
@@ -74,11 +75,11 @@
                     <div class="count-badge" id="pileBadge">Yerde: 4 Kart</div>
                 </div>
             </div>
-            <div class="status-msg" id="statusMsg">Masaya bağlanılıyor...</div>
+            <div class="status-msg" id="statusMsg">Masa seçimi bekleniyor...</div>
         </div>
 
-        <div class="seat-right">
-            <div class="player-tag" id="tagRight">Rakip 2</div>
+        <div class="seat-right" id="seatRightBox">
+            <div class="player-tag" id="tagRight">Sağ Rakip</div>
             <div class="side-hand" id="handRight"></div>
         </div>
 
@@ -88,14 +89,29 @@
         </div>
     </div>
 
+    <!-- Masa Seçim Lobisi -->
     <div class="overlay" id="lobbyOverlay">
         <div class="box">
-            <h2>🃏 4 Kişilik Pişti Masası</h2>
-            <p style="font-size:13px; color:#cbd5e1;">4 gerçek oyuncu dolduğunda oyun otomatik başlar veya beklemek istemezseniz botlarla başlatabilirsiniz.</p>
+            <h2>🃏 Canlı Pişti Salonu</h2>
             <div id="joinForm">
                 <input type="text" id="playerNameInput" placeholder="Takma adınızı yazın..." maxlength="14">
+                
+                <div style="text-align:left; font-size:12px; color:#94a3b8; margin:8px 0 4px;">Oyun Modu Seçin:</div>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <button type="button" class="btn" id="btnModeSolo" onclick="selectMode('solo')" style="margin:0; background:#334155; color:#fff;">👤 Tekli (2 Kişi)</button>
+                    <button type="button" class="btn" id="btnModeTeam" onclick="selectMode('team')" style="margin:0;">👥 Eşli (4 Kişi)</button>
+                </div>
+
+                <div style="text-align:left; font-size:12px; color:#94a3b8; margin:8px 0 4px;">Bitiş Puanı Seçin:</div>
+                <div style="display:flex; gap:8px; margin-bottom:14px;">
+                    <button type="button" class="btn" id="btnTarget51" onclick="selectTarget(51)" style="margin:0; background:#334155; color:#fff;">51</button>
+                    <button type="button" class="btn" id="btnTarget101" onclick="selectTarget(101)" style="margin:0;">101</button>
+                    <button type="button" class="btn" id="btnTarget151" onclick="selectTarget(151)" style="margin:0; background:#334155; color:#fff;">151</button>
+                </div>
+
                 <button class="btn" onclick="joinTable()">Masaya Otur</button>
             </div>
+
             <div id="waitingArea" style="display:none;">
                 <div class="lobby-list" id="lobbyPlayersList"></div>
                 <button class="btn" onclick="socket.emit('fillPistiBots')">Botlarla Tamamla ve Başlat</button>
@@ -103,33 +119,54 @@
         </div>
     </div>
 
+    <!-- El Arası ve Maç Sonu Ekranı -->
     <div class="overlay" id="endOverlay" style="display:none;">
         <div class="box">
-            <h2 id="endTitle">El Tamamlandı!</h2>
+            <h2 id="endTitle">Tur Bitti!</h2>
             <p id="endDetail" style="margin:15px 0; line-height:1.7;"></p>
-            <button class="btn" onclick="location.reload()">Yeni El İçin Masaya Dön</button>
+            <button class="btn" id="endBtn" onclick="location.reload()">Yeni Maç İçin Masaya Dön</button>
         </div>
     </div>
-
     <script>
         const socket = io();
+        let selectedMode = 'team';
+        let selectedTarget = 101;
         let mySeatIndex = 0;
+
+        function selectMode(m) {
+            selectedMode = m;
+            document.getElementById('btnModeSolo').style.background = (m === 'solo') ? '#fbbf24' : '#334155';
+            document.getElementById('btnModeSolo').style.color = (m === 'solo') ? '#0f172a' : '#fff';
+            document.getElementById('btnModeTeam').style.background = (m === 'team') ? '#fbbf24' : '#334155';
+            document.getElementById('btnModeTeam').style.color = (m === 'team') ? '#0f172a' : '#fff';
+        }
+
+        function selectTarget(t) {
+            selectedTarget = t;
+            [51, 101, 151].forEach(val => {
+                const el = document.getElementById('btnTarget' + val);
+                el.style.background = (val === t) ? '#fbbf24' : '#334155';
+                el.style.color = (val === t) ? '#0f172a' : '#fff';
+            });
+        }
 
         function joinTable() {
             const name = document.getElementById('playerNameInput').value.trim() || "Oyuncu";
             document.getElementById('joinForm').style.display = 'none';
             document.getElementById('waitingArea').style.display = 'block';
-            socket.emit('joinPisti', { name: name });
+            socket.emit('joinPisti', { name: name, mode: selectedMode, target: selectedTarget });
         }
 
         socket.on('pistiLobbyUpdate', (data) => {
+            const modeText = data.mode === 'solo' ? 'Tekli (2 Kişi)' : 'Eşli (4 Kişi)';
             const list = document.getElementById('lobbyPlayersList');
-            list.innerHTML = `<strong>Masadaki Oyuncular (${data.players.length}/4):</strong><br>` +
+            list.innerHTML = `<strong>${modeText} - ${data.target} Puan Masası (${data.players.length}/${data.maxPlayers}):</strong><br>` +
                 data.players.map((p, i) => `${i + 1}. Koltuk: ${p.name}`).join('<br>');
         });
 
         socket.on('pistiBusy', (data) => {
             alert(data.message);
+            location.reload();
         });
 
         function renderCard(card, clickable, idx) {
@@ -148,53 +185,80 @@
 
         socket.on('pistiState', (state) => {
             document.getElementById('lobbyOverlay').style.display = 'none';
+            document.getElementById('endOverlay').style.display = 'none';
             mySeatIndex = state.myIndex;
             const isMyTurn = (state.turnIndex === mySeatIndex);
 
-            document.getElementById('t1Score').innerText = state.team1Score;
-            document.getElementById('t2Score').innerText = state.team2Score;
+            document.getElementById('targetDisplay').innerText = state.target;
+            document.getElementById('t1Score').innerText = state.totalScores.at(0);
+            document.getElementById('t2Score').innerText = state.totalScores.at(1);
             document.getElementById('deckBadge').innerText = `Deste: ${state.deckCount}`;
             document.getElementById('pileBadge').innerText = `Yerde: ${state.pileCount} Kart`;
             document.getElementById('statusMsg').innerText = state.message;
 
-            const pileBox = document.getElementById('pileBox');
-            pileBox.innerHTML = state.topCard ? renderCard(state.topCard, false, 0) : '';
-
+            document.getElementById('pileBox').innerHTML = state.topCard ? renderCard(state.topCard, false, 0) : '';
             document.getElementById('handBottom').innerHTML = state.myHand.map((c, i) => renderCard(c, isMyTurn, i)).join('');
 
-            const rightIdx = (mySeatIndex + 1) % 4;
-            const topIdx = (mySeatIndex + 2) % 4;
-            const leftIdx = (mySeatIndex + 3) % 4;
+            const me = state.players[mySeatIndex];
+            const tagBottom = document.getElementById('tagBottom');
+            tagBottom.innerText = state.mode === 'solo' ? `${me.name}` : `${me.name} (Takım ${(mySeatIndex % 2) + 1})`;
+            tagBottom.className = 'player-tag' + (state.turnIndex === mySeatIndex ? ' active-turn' : '');
 
-            const seats = [
-                { idx: mySeatIndex, tag: 'tagBottom', hand: null },
-                { idx: rightIdx, tag: 'tagRight', hand: 'handRight', side: true },
-                { idx: topIdx, tag: 'tagTop', hand: 'handTop', side: false },
-                { idx: leftIdx, tag: 'tagLeft', hand: 'handLeft', side: true }
-            ];
+            if (state.mode === 'solo') {
+                document.getElementById('seatLeftBox').style.visibility = 'hidden';
+                document.getElementById('seatRightBox').style.visibility = 'hidden';
+                document.getElementById('scoreLabel1').innerHTML = `${state.players.at(0).name}: <span id="t1Score">${state.totalScores.at(0)}</span>`;
+                document.getElementById('scoreLabel2').innerHTML = `${state.players.at(1).name}: <span id="t2Score">${state.totalScores.at(1)}</span>`;
 
-            seats.forEach(s => {
-                const pl = state.players[s.idx];
-                const tagEl = document.getElementById(s.tag);
-                tagEl.innerText = `${pl.name} (Takım ${(s.idx % 2) + 1})`;
-                if (state.turnIndex === s.idx) tagEl.classList.add('active-turn');
-                else tagEl.classList.remove('active-turn');
+                const oppIdx = (mySeatIndex + 1) % 2;
+                const opp = state.players[oppIdx];
+                const tagTop = document.getElementById('tagTop');
+                tagTop.innerText = opp.name;
+                tagTop.className = 'player-tag' + (state.turnIndex === oppIdx ? ' active-turn' : '');
+                document.getElementById('handTop').innerHTML = Array(opp.cardCount).fill(`<div class="card-back"></div>`).join('');
+            } else {
+                document.getElementById('seatLeftBox').style.visibility = 'visible';
+                document.getElementById('seatRightBox').style.visibility = 'visible';
+                document.getElementById('scoreLabel1').innerHTML = `1. Takım (1-3): <span id="t1Score">${state.totalScores.at(0)}</span>`;
+                document.getElementById('scoreLabel2').innerHTML = `2. Takım (2-4): <span id="t2Score">${state.totalScores.at(1)}</span>`;
 
-                if (s.hand) {
+                const seats = [
+                    { idx: (mySeatIndex + 1) % 4, tag: 'tagRight', hand: 'handRight', side: true },
+                    { idx: (mySeatIndex + 2) % 4, tag: 'tagTop', hand: 'handTop', side: false },
+                    { idx: (mySeatIndex + 3) % 4, tag: 'tagLeft', hand: 'handLeft', side: true }
+                ];
+                seats.forEach(s => {
+                    const pl = state.players[s.idx];
+                    const tagEl = document.getElementById(s.tag);
+                    tagEl.innerText = `${pl.name} (Takım ${(s.idx % 2) + 1})`;
+                    tagEl.className = 'player-tag' + (state.turnIndex === s.idx ? ' active-turn' : '');
                     const cardHTML = s.side ? `<div class="side-card-back"></div>` : `<div class="card-back"></div>`;
                     document.getElementById(s.hand).innerHTML = Array(pl.cardCount).fill(cardHTML).join('');
-                }
-            });
+                });
+            }
         });
 
-        socket.on('pistiGameOver', (res) => {
-            const myTeam = (mySeatIndex % 2) + 1;
-            const won = (myTeam === 1 && res.team1Score > res.team2Score) || (myTeam === 2 && res.team2Score > res.team1Score);
-            document.getElementById('endTitle').innerText = won ? '🎉 Takımınız Kazandı!' : 'El Sona Erdi!';
+        socket.on('pistiRoundSummary', (data) => {
+            document.getElementById('endTitle').innerText = '📊 El Sonu Puan Durumu';
             document.getElementById('endDetail').innerHTML = `
-                <strong>1. Takım (1-3. Koltuklar):</strong> ${res.team1Score} Puan<br>
-                <strong>2. Takım (2-4. Koltuklar):</strong> ${res.team2Score} Puan
+                <strong>Bu El Alınan Puanlar:</strong> +${data.roundPts.at(0)} / +${data.roundPts.at(1)}<br>
+                <strong>Toplam Skor:</strong> ${data.totalScores.at(0)} - ${data.totalScores.at(1)} (Hedef: ${data.target})<br>
+                <small style="color:#fbbf24;">Yeni el 3 saniye içinde otomatik başlıyor...</small>
             `;
+            document.getElementById('endBtn').style.display = 'none';
+            document.getElementById('endOverlay').style.display = 'flex';
+        });
+
+        socket.on('pistiMatchOver', (res) => {
+            const mySide = res.mode === 'solo' ? (mySeatIndex + 1) : ((mySeatIndex % 2) + 1);
+            const iWon = (mySide === res.winnerSide);
+            document.getElementById('endTitle').innerText = iWon ? '🏆 TEBRİKLER, MAÇI KAZANDINIZ!' : '🏁 Maç Sona Erdi!';
+            document.getElementById('endDetail').innerHTML = `
+                <strong>${res.target} Puan Hedefine Ulaşıldı!</strong><br><br>
+                <strong>1. Taraf Toplam:</strong> ${res.totalScores.at(0)} Puan<br>
+                <strong>2. Taraf Toplam:</strong> ${res.totalScores.at(1)} Puan
+            `;
+            document.getElementById('endBtn').style.display = 'block';
             document.getElementById('endOverlay').style.display = 'flex';
         });
     </script>
