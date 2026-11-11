@@ -426,30 +426,57 @@ function processRoundClaims(fee) {
 }
 
 // ==========================================
-// 🃏 TEKLİ & EŞLİ (51 / 101 / 151) CANLI PİŞTİ SUNUCUSU
+// 🃏 ÇOK MASALI CANLI PİŞTİ SUNUCUSU (SINIRSIZ MASA)
 // ==========================================
 let pistiRooms = {};
+let pistiRoomCounter = 1;
 
-function getPistiRoom(mode, target) {
-    let key = `${mode}_${target}`;
-    if (!pistiRooms[key]) {
-        pistiRooms[key] = {
-            key: key,
-            mode: mode,
-            target: parseInt(target) || 101,
-            maxPlayers: mode === 'solo' ? 2 : 4,
-            players: new Array(),
-            deck: new Array(),
-            pile: new Array(),
-            captured: Array.of(new Array(), new Array(), new Array(), new Array()),
-            roundPisti: Array.of(0, 0, 0, 0),
-            totalScores: Array.of(0, 0),
-            turnIndex: 0,
-            lastCapturer: 0,
-            active: false
-        };
+function getAvailablePistiRoom(mode, target, forceNew = false) {
+    if (!forceNew) {
+        for (let id in pistiRooms) {
+            let r = pistiRooms[id];
+            if (!r.active && r.mode === mode && r.target === target && r.players.length < r.maxPlayers) {
+                return r;
+            }
+        }
     }
-    return pistiRooms[key];
+    let roomId = "masa_" + pistiRoomCounter++;
+    pistiRooms[roomId] = {
+        id: roomId,
+        title: `Masa #${pistiRoomCounter - 1}`,
+        mode: mode,
+        target: parseInt(target) || 101,
+        maxPlayers: mode === 'solo' ? 2 : 4,
+        players: new Array(),
+        deck: new Array(),
+        pile: new Array(),
+        captured: Array.of(new Array(), new Array(), new Array(), new Array()),
+        roundPisti: Array.of(0, 0, 0, 0),
+        totalScores: Array.of(0, 0),
+        turnIndex: 0,
+        lastCapturer: 0,
+        active: false
+    };
+    return pistiRooms[roomId];
+}
+
+function getPistiRoomsSummary() {
+    let list = new Array();
+    for (let id in pistiRooms) {
+        let r = pistiRooms[id];
+        if (r.players.length > 0) {
+            list.push({
+                id: r.id,
+                title: r.title,
+                mode: r.mode,
+                target: r.target,
+                count: r.players.length,
+                max: r.maxPlayers,
+                active: r.active
+            });
+        }
+    }
+    return list;
 }
 
 function createPistiDeck() {
@@ -473,6 +500,7 @@ function broadcastPistiState(room, msg = "") {
         if (!p.isBot) {
             io.to(p.id).emit('pistiState', {
                 active: room.active,
+                roomTitle: room.title,
                 mode: room.mode,
                 target: room.target,
                 myIndex: idx,
@@ -497,6 +525,7 @@ function startPistiRound(room) {
     room.turnIndex = 0;
     room.lastCapturer = 0;
     room.active = true;
+    io.emit('pistiRoomsList', getPistiRoomsSummary());
 
     for (let i = 0; i < 4; i++) room.pile.push(room.deck.pop());
     dealPistiCards(room);
@@ -512,7 +541,7 @@ function dealPistiCards(room) {
             if (room.deck.length > 0) p.hand.push(room.deck.pop());
         });
     }
-    broadcastPistiState(room, `Hedef: ${room.target} Puan | Sıra: ${room.players.at(room.turnIndex).name}`);
+    broadcastPistiState(room, `${room.title} | Sıra: ${room.players.at(room.turnIndex).name}`);
     checkPistiBotTurn(room);
 }
 
@@ -624,17 +653,16 @@ function finishPistiRound(room) {
     if (reachedTarget && !isTieAtTop) {
         room.active = false;
         let winnerSide = newTotal1 > newTotal2 ? 1 : 2;
-        io.to(room.key).emit('pistiMatchOver', {
+        io.to(room.id).emit('pistiMatchOver', {
             mode: room.mode,
             target: room.target,
             totalScores: room.totalScores,
-            winnerSide: winnerSide,
-            players: room.players.map(p => p.name)
+            winnerSide: winnerSide
         });
-        room.players = new Array();
-        room.totalScores = Array.of(0, 0);
+        delete pistiRooms[room.id];
+        io.emit('pistiRoomsList', getPistiRoomsSummary());
     } else {
-        io.to(room.key).emit('pistiRoundSummary', {
+        io.to(room.id).emit('pistiRoundSummary', {
             roundPts: Array.of(p1Pts, p2Pts),
             totalScores: room.totalScores,
             target: room.target
@@ -644,32 +672,36 @@ function finishPistiRound(room) {
 }
 
 io.on('connection', (socket) => {
+    socket.emit('pistiRoomsList', getPistiRoomsSummary());
+
+    socket.on('getPistiRooms', () => {
+        socket.emit('pistiRoomsList', getPistiRoomsSummary());
+    });
+
     socket.on('joinPisti', (data) => {
         let mode = (data && data.mode === 'solo') ? 'solo' : 'team';
         let parsedTarget = data ? parseInt(data.target) : 101;
         let target = Array.of(51, 101, 151).includes(parsedTarget) ? parsedTarget : 101;
-        let room = getPistiRoom(mode, target);
+        let room = (data && data.roomId && pistiRooms[data.roomId]) ? pistiRooms[data.roomId] : getAvailablePistiRoom(mode, target, Boolean(data && data.forceNew));
 
-        if (room.active) {
-            socket.emit('pistiBusy', { message: "Bu masada şu an devam eden bir oyun var. Diğer puan/mod masalarını seçebilirsiniz." });
-            return;
+        if (room.active || room.players.length >= room.maxPlayers) {
+            room = getAvailablePistiRoom(mode, target, true);
         }
 
-        socket.join(room.key);
-        socket.pistiRoomKey = room.key;
+        socket.join(room.id);
+        socket.pistiRoomId = room.id;
 
-        let exists = room.players.find(p => p.id === socket.id);
-        if (!exists && room.players.length < room.maxPlayers) {
-            let pName = (data && data.name) ? String(data.name).substring(0, 14) : ("Oyuncu_" + socket.id.substring(0, 3));
-            room.players.push({ id: socket.id, name: pName, isBot: false, hand: new Array() });
-        }
+        let pName = (data && data.name) ? String(data.name).substring(0, 14) : ("Oyuncu_" + socket.id.substring(0, 3));
+        room.players.push({ id: socket.id, name: pName, isBot: false, hand: new Array() });
 
-        io.to(room.key).emit('pistiLobbyUpdate', {
+        io.to(room.id).emit('pistiLobbyUpdate', {
+            title: room.title,
             players: room.players.map(p => ({ name: p.name, isBot: p.isBot })),
             maxPlayers: room.maxPlayers,
             mode: room.mode,
             target: room.target
         });
+        io.emit('pistiRoomsList', getPistiRoomsSummary());
 
         if (room.players.length === room.maxPlayers) {
             startPistiRound(room);
@@ -677,7 +709,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('fillPistiBots', () => {
-        let room = pistiRooms[socket.pistiRoomKey];
+        let room = pistiRooms[socket.pistiRoomId];
         if (!room || room.active || room.players.length === 0) return;
         let botNum = 1;
         while (room.players.length < room.maxPlayers) {
@@ -688,7 +720,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('playPistiCard', (data) => {
-        let room = pistiRooms[socket.pistiRoomKey];
+        let room = pistiRooms[socket.pistiRoomId];
         if (!room) return;
         let idx = room.players.findIndex(p => p.id === socket.id);
         if (idx !== -1 && data && typeof data.cardIndex === 'number') {
@@ -697,23 +729,30 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        let room = pistiRooms[socket.pistiRoomKey];
+        let room = pistiRooms[socket.pistiRoomId];
         if (!room) return;
         let idx = room.players.findIndex(p => p.id === socket.id);
         if (idx !== -1) {
             if (room.active) {
                 room.players.at(idx).isBot = true;
                 room.players.at(idx).name += " (Bot)";
-                checkPistiBotTurn(room);
+                let hasHuman = room.players.some(p => !p.isBot);
+                if (!hasHuman) delete pistiRooms[room.id];
+                else checkPistiBotTurn(room);
             } else {
                 room.players.splice(idx, 1);
-                io.to(room.key).emit('pistiLobbyUpdate', {
-                    players: room.players.map(p => ({ name: p.name, isBot: p.isBot })),
-                    maxPlayers: room.maxPlayers,
-                    mode: room.mode,
-                    target: room.target
-                });
+                if (room.players.length === 0) delete pistiRooms[room.id];
+                else {
+                    io.to(room.id).emit('pistiLobbyUpdate', {
+                        title: room.title,
+                        players: room.players.map(p => ({ name: p.name, isBot: p.isBot })),
+                        maxPlayers: room.maxPlayers,
+                        mode: room.mode,
+                        target: room.target
+                    });
+                }
             }
+            io.emit('pistiRoomsList', getPistiRoomsSummary());
         }
     });
 });
