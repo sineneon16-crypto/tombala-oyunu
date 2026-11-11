@@ -123,28 +123,44 @@
         .action-btn.bingo-style.btn-active { background: #fb5607 !important; color: #fff !important; box-shadow: 0 0 12px #fb5607; }
         .info-box { background: #112240; border-radius: 8px; border: 1px solid #1e3d59; padding: 10px; text-align: center; }
         .info-box-title { font-size: 11px; color: #ffb703; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; display: block; }
-       @media screen and (max-width: 900px) and (orientation: portrait) {
+       /* Mobil Tam Ekran Yatay Görünüm (Boşluksuz) */
+@media screen and (max-width: 950px) {
     html, body {
-        width: 100vh;
-        height: 100vw;
-        margin: 0;
-        padding: 0;
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden !important;
+        transform: none !important;
+        position: static !important;
     }
-    body {
-        position: relative;
-        transform: rotate(90deg);
-        transform-origin: bottom left;
-        top: -100vw;
-        left: 0;
-        zoom: 0.62;
+    .main-layout {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        padding: 4px !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
     }
-}
-@media screen and (max-width: 950px) and (orientation: landscape) {
-    body {
-        zoom: 0.65;
-        overflow-x: hidden;
+    .left-panel, .right-panel {
+        width: 24% !important;
+        min-width: 0 !important;
+        font-size: 11px !important;
+    }
+    .center-panel {
+        width: 52% !important;
+        min-width: 0 !important;
+    }
+    .top-header {
+        padding: 6px !important;
+        font-size: 16px !important;
+    }
+    button, .lobi-btn {
+        padding: 5px 4px !important;
+        font-size: 11px !important;
     }
 }
     </style>
