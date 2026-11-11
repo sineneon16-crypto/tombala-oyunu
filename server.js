@@ -18,6 +18,10 @@ app.get('/tombala', (req, res) => {
     res.sendFile(path.join(__dirname, 'tombala.html'));
 });
 
+app.get('/pisti', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pisti.html'));
+});
+
 function saveIpWallets() {
     try { fs.writeFileSync(IP_DB_FILE, JSON.stringify(ipWallets, null, 2)); } catch (e) {}
 }
