@@ -171,33 +171,42 @@
         .btn { background: #fbbf24; color: #0f172a; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 6px; }
         input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 8px; }
 
-        /* Mobil Ekranlar İçin Sıfır Taşmalı Otomatik Ortalama */
-        @media screen and (max-width: 768px) {
-            .top-bar { padding: 6px 8px; }
+                /* Mobil Ekranlar İçin Yüzdelik Sıfır Taşmalı Tam Ortalama */
+              @media screen and (max-width: 768px) {
+            .top-bar { padding: 5px 8px; }
             .back-btn { padding: 4px 8px; font-size: 11px; }
             .scoreboard { gap: 4px; font-size: 10px; }
             .score-box { padding: 4px 6px; }
-            .score-box span { font-size: 12px; }
+            .score-box span { font-size: 11px; }
 
             .table-grid {
-                width: 98%;
-                height: calc(100dvh - 48px);
+                width: 98vw;
+                max-width: 98vw;
+                height: calc(100dvh - 44px);
                 max-height: none;
-                grid-template-columns: 76px 1fr 76px;
-                padding: 8px 6px;
-                border-width: 5px;
-                border-radius: 20px;
+                margin: 2px auto;
+                grid-template-columns: 18% 64% 18%;
+                padding: 6px 2px;
+                border-width: 4px;
+                border-radius: 16px;
+                overflow: hidden;
             }
-            .player-tag { font-size: 9px; padding: 3px 6px; margin-bottom: 4px; max-width: 74px; overflow: hidden; text-overflow: ellipsis; }
-            .hand { min-height: 68px; gap: 4px; }
-            .card { width: 48px; height: 68px; font-size: 11px; padding: 3px; border-radius: 6px; }
-            .card-center { font-size: 18px; }
-            .card-back { width: 32px; height: 46px; }
-            .side-card-back { width: 38px; height: 14px; }
-            .center-cards { gap: 10px; padding: 6px 10px; }
-            .center-cards .card-back { width: 48px !important; height: 68px !important; }
-            .pile-box { width: 50px; height: 70px; }
-            .status-msg { font-size: 10px; padding: 4px 8px; }
+            .seat-left, .seat-right, .seat-top, .seat-bottom, .center-table {
+                min-width: 0;
+                width: 100%;
+                overflow: hidden;
+            }
+            .player-tag { font-size: 8px; padding: 2px 5px; margin-bottom: 4px; max-width: 95%; overflow: hidden; text-overflow: ellipsis; }
+            .hand { min-height: 62px; gap: 3px; }
+            .card { width: 42px; height: 60px; font-size: 10px; padding: 2px; border-radius: 5px; }
+            .card-center { font-size: 16px; }
+            .card-back { width: 26px; height: 38px; border-width: 1px; }
+            .side-card-back { width: 32px; height: 11px; border-width: 1px; }
+            .center-cards { gap: 8px; padding: 5px 8px; }
+            .center-cards .card-back { width: 40px !important; height: 58px !important; }
+            .pile-box { width: 42px; height: 60px; }
+            .count-badge { font-size: 9px; }
+            .status-msg { font-size: 9px; padding: 4px 6px; max-width: 96%; }
         }
     </style>
 </head>
@@ -268,8 +277,11 @@
                 </div>
 
                 <button class="btn" onclick="joinTable()">Masaya Otur</button>
+<button type="button" class="btn" onclick="joinTable(true)" style="background:#10b981; color:#fff;">+ Yeni Özel Masa Aç</button>
+<div id="activeRoomsBox" style="margin-top:12px; text-align:left; max-height:130px; overflow-y:auto; background:#0f172a; padding:8px; border-radius:8px; border:1px solid #334155; font-size:12px;">
+    <div style="color:#94a3b8; text-align:center;">Açık masalar yükleniyor...</div>
+</div>
             </div>
-
             <div id="waitingArea" style="display:none;">
                 <div class="lobby-list" id="lobbyPlayersList"></div>
                 <button class="btn" onclick="socket.emit('fillPistiBots')">Botlarla Tamamla ve Başlat</button>
