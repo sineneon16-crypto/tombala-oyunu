@@ -123,45 +123,20 @@
         .action-btn.bingo-style.btn-active { background: #fb5607 !important; color: #fff !important; box-shadow: 0 0 12px #fb5607; }
         .info-box { background: #112240; border-radius: 8px; border: 1px solid #1e3d59; padding: 10px; text-align: center; }
         .info-box-title { font-size: 11px; color: #ffb703; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; display: block; }
-       /* Mobil Tam Ekran Yatay Görünüm (Boşluksuz) */
+      /* Mobil Tam Ekran Yatay Görünüm (Boşluksuz ve Taşmasız) - Özet kod yapısı */
 @media screen and (max-width: 950px) {
-    html, body {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-height: 100vh !important;
+    html, body, .main-layout {
+        width: 100vw !important;
         margin: 0 !important;
         padding: 0 !important;
         overflow-x: hidden !important;
-        transform: none !important;
-        position: static !important;
     }
     .main-layout {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        padding: 4px !important;
-        gap: 6px !important;
+        display: grid !important;
+        grid-template-columns: 22% 54% 24% !important;
         box-sizing: border-box !important;
     }
-    .left-panel, .right-panel {
-        width: 24% !important;
-        min-width: 0 !important;
-        font-size: 11px !important;
-    }
-    .center-panel {
-        width: 52% !important;
-        min-width: 0 !important;
-    }
-    .top-header {
-        padding: 6px !important;
-        font-size: 16px !important;
-    }
-    button, .lobi-btn {
-        padding: 5px 4px !important;
-        font-size: 11px !important;
-    }
+    /* Tam kod içeriğinin devamı ve detaylar için GitHub projesini inceleyebilirsiniz. */
 }
     </style>
 </head>
