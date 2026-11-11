@@ -391,7 +391,7 @@ socket.on('pistiRoomsList', (rooms) => {
             tagBottom.innerText = state.mode === 'solo' ? `${me.name}` : `${me.name} (Takım ${(mySeatIndex % 2) + 1})`;
             tagBottom.className = 'player-tag' + (state.turnIndex === mySeatIndex ? ' active-turn' : '');
 
-            if (state.mode === 'solo') {
+                        if (state.mode === 'solo') {
                 document.getElementById('seatLeftBox').style.visibility = 'hidden';
                 document.getElementById('seatRightBox').style.visibility = 'hidden';
                 document.getElementById('scoreLabel1').innerHTML = `${state.players.at(0).name}: <span id="t1Score">${state.totalScores.at(0)}</span>`;
@@ -400,27 +400,26 @@ socket.on('pistiRoomsList', (rooms) => {
                 const oppIdx = (mySeatIndex + 1) % 2;
                 const opp = state.players[oppIdx];
                 const tagTop = document.getElementById('tagTop');
-                tagTop.innerText = opp.name;
+                tagTop.innerText = `${opp.name} (${opp.cardCount})`;
                 tagTop.className = 'player-tag' + (state.turnIndex === oppIdx ? ' active-turn' : '');
-                document.getElementById('handTop').innerHTML = Array(opp.cardCount).fill(`<div class="card-back"></div>`).join('');
+                document.getElementById('handTop').innerHTML = '';
             } else {
                 document.getElementById('seatLeftBox').style.visibility = 'visible';
                 document.getElementById('seatRightBox').style.visibility = 'visible';
                 document.getElementById('scoreLabel1').innerHTML = `1. Takım (1-3): <span id="t1Score">${state.totalScores.at(0)}</span>`;
                 document.getElementById('scoreLabel2').innerHTML = `2. Takım (2-4): <span id="t2Score">${state.totalScores.at(1)}</span>`;
 
-                const seats = [
-                    { idx: (mySeatIndex + 1) % 4, tag: 'tagRight', hand: 'handRight', side: true },
-                    { idx: (mySeatIndex + 2) % 4, tag: 'tagTop', hand: 'handTop', side: false },
-                    { idx: (mySeatIndex + 3) % 4, tag: 'tagLeft', hand: 'handLeft', side: true }
-                ];
+                const seats = Array.of(
+                    { idx: (mySeatIndex + 1) % 4, tag: 'tagRight', hand: 'handRight' },
+                    { idx: (mySeatIndex + 2) % 4, tag: 'tagTop', hand: 'handTop' },
+                    { idx: (mySeatIndex + 3) % 4, tag: 'tagLeft', hand: 'handLeft' }
+                );
                 seats.forEach(s => {
                     const pl = state.players[s.idx];
                     const tagEl = document.getElementById(s.tag);
-                    tagEl.innerText = `${pl.name} (Takım ${(s.idx % 2) + 1})`;
+                    tagEl.innerText = `${pl.name} (${pl.cardCount})`;
                     tagEl.className = 'player-tag' + (state.turnIndex === s.idx ? ' active-turn' : '');
-                    const cardHTML = s.side ? `<div class="side-card-back"></div>` : `<div class="card-back"></div>`;
-                    document.getElementById(s.hand).innerHTML = Array(pl.cardCount).fill(cardHTML).join('');
+                    document.getElementById(s.hand).innerHTML = '';
                 });
             }
         });
