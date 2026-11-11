@@ -86,8 +86,8 @@ io.on('connection', (socket) => {
             ipWallets[clientIp].wallet = 0;
             welcomeMsg = "Bakiyeniz 0. Reklam izleyerek +10 Bakiye kazanabilirsiniz!";
         } else {
-            ipWallets[clientIp].wallet = savedBalance + 5;
-            welcomeMsg = "Tekrar hoş geldiniz! Giriş bonusu olarak +5 Bakiye eklendi.";
+            ipWallets[clientIp].wallet = savedBalance ;
+            welcomeMsg = "Tekrar hoş geldiniz! Kayıtlı bakiyenizle devam ediyorsunuz.";
         }
         ipWallets[clientIp].lastVisit = Date.now();
     }
