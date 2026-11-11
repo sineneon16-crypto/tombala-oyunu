@@ -141,9 +141,9 @@
             document.getElementById('btnModeTeam').style.color = (m === 'team') ? '#0f172a' : '#fff';
         }
 
-        function selectTarget(t) {
+                function selectTarget(t) {
             selectedTarget = t;
-            [51, 101, 151].forEach(val => {
+            Array.of(51, 101, 151).forEach(val => {
                 const el = document.getElementById('btnTarget' + val);
                 el.style.background = (val === t) ? '#fbbf24' : '#334155';
                 el.style.color = (val === t) ? '#0f172a' : '#fff';
