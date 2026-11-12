@@ -1,520 +1,397 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>4 Kişilik Canlı Pişti - Online Oyun Salonu</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <script async src="https://googlesyndication.com" crossorigin="anonymous"></script>
-          <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; }
-        html, body {
-            width: 100%;
-            max-width: 100vw;
-            height: 100dvh;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
-            color: #f8fafc;
-            display: flex;
-            flex-direction: column;
-        }
-        .top-bar {
-            width: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            padding: 8px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(251, 191, 36, 0.35);
-            flex-shrink: 0;
-        }
-        .back-btn {
-            background: #1e293b;
-            color: #e2e8f0;
-            text-decoration: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            border: 1px solid #334155;
-        }
-        .scoreboard { display: flex; gap: 8px; font-size: 12px; font-weight: 600; }
-        .score-box {
-            background: #1e293b;
-            padding: 5px 10px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-            white-space: nowrap;
-        }
-        .score-box span { color: #fbbf24; font-size: 14px; font-weight: 800; }
-
-        /* Dış Kenarlı ve Ferah Masa Düzeni */
-        .table-grid {
-            flex: 1;
-            display: grid;
-            grid-template-rows: 36px 1fr auto;
-            grid-template-columns: 115px 1fr 115px;
-            width: 96%;
-            max-width: 880px;
-            max-height: 580px;
-            margin: auto;
-            padding: 8px;
-            align-items: center;
-            position: relative;
-        }
-
-        /* Yeşil Çuha Masa Çerçevesi (Sadece Orta ve Kart Alanını Sarar) */
-        .table-grid::before {
-            content: "";
-            grid-column: 2;
-            grid-row: 2 / 4;
-            width: 100%;
-            height: calc(100% - 34px);
-            align-self: start;
-            background: radial-gradient(circle at center, #059669 0%, #065f46 55%, #022c22 100%);
-            border-radius: 28px;
-            border: 8px solid #3f2305;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.85), inset 0 0 35px rgba(0,0,0,0.55);
-            z-index: 0;
-        }
-
-        .seat-top { grid-column: 2; grid-row: 1; display: flex; justify-content: center; align-items: center; z-index: 2; }
-        .seat-left { grid-column: 1; grid-row: 2; display: flex; justify-content: flex-end; align-items: center; padding-right: 10px; z-index: 2; }
-        .seat-right { grid-column: 3; grid-row: 2; display: flex; justify-content: flex-start; align-items: center; padding-left: 10px; z-index: 2; }
-        .seat-bottom { grid-column: 2; grid-row: 3; display: flex; flex-direction: column-reverse; align-items: center; gap: 10px; padding-bottom: 4px; z-index: 2; }
-        .center-table { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding-top: 14px; z-index: 2; }
-
-        .hand, .side-hand { display: none; }
-        .player-hand { display: flex !important; justify-content: center; gap: 10px; min-height: 104px; align-items: center; }
-
-        .player-tag {
-            background: #1e293b;
-            color: #e2e8f0;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            border: 1px solid #475569;
-            white-space: nowrap;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        .player-tag.active-turn {
-            background: #fbbf24;
-            color: #0f172a;
-            border-color: #fef08a;
-            font-weight: 800;
-            box-shadow: 0 0 14px rgba(251, 191, 36, 0.85);
-        }
-
-        .card {
-            width: 74px;
-            height: 104px;
-            background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-            border-radius: 9px;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.45);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 6px;
-            font-weight: 800;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border: 1px solid #cbd5e1;
-        }
-        .player-hand .card:hover {
-            transform: translateY(-12px);
-            box-shadow: 0 12px 20px rgba(251, 191, 36, 0.75);
-            border-color: #fbbf24;
-        }
-        .card.red { color: #dc2626; }
-        .card.black { color: #0f172a; }
-        .card-center { font-size: 28px; text-align: center; }
-
-        .card-back {
-            width: 74px;
-            height: 104px;
-            background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 6px, #2563eb 6px, #2563eb 12px);
-            border: 2px solid #f8fafc;
-            border-radius: 9px;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.45);
-        }
-
-        .center-cards {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            background: rgba(0, 0, 0, 0.28);
-            padding: 12px 20px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-        .pile-box {
-            width: 76px;
-            height: 106px;
-            border: 2px dashed rgba(251, 191, 36, 0.5);
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .count-badge { font-size: 11px; font-weight: 700; color: #fde68a; margin-top: 5px; text-align: center; }
-        .status-msg {
-            background: rgba(2, 6, 23, 0.88);
-            color: #fbbf24;
-            padding: 6px 16px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 700;
-            border: 1px solid rgba(251, 191, 36, 0.5);
-            text-align: center;
-        }
-
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2,6,23,0.92); z-index: 999; display: flex; justify-content: center; align-items: center; padding: 15px; }
-        .box { background: #1e293b; padding: 22px; border-radius: 16px; border: 2px solid #fbbf24; max-width: 360px; width: 100%; text-align: center; }
-        .box h2 { color: #fbbf24; margin-bottom: 10px; font-size: 20px; }
-        .lobby-list { background: #0f172a; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: left; font-size: 13px; line-height: 1.7; border: 1px solid #334155; }
-        .btn { background: #fbbf24; color: #0f172a; border: none; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 6px; }
-        input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; margin-bottom: 8px; }
-
-        /* Mobil Ekranlar İçin Sıfır Taşmalı Dış Kenar Düzeni */
-        @media screen and (max-width: 768px) {
-            .top-bar { padding: 5px 8px; }
-            .back-btn { padding: 4px 8px; font-size: 11px; }
-            .scoreboard { gap: 4px; font-size: 10px; }
-            .score-box { padding: 4px 6px; }
-            .score-box span { font-size: 11px; }
-
-            .table-grid {
-                width: 99vw;
-                max-width: 99vw;
-                height: calc(100dvh - 44px);
-                max-height: none;
-                margin: 2px auto;
-                grid-template-rows: 28px 1fr auto;
-                grid-template-columns: 19% 62% 19%;
-                padding: 4px 2px;
-            }
-            .table-grid::before {
-                border-width: 5px;
-                border-radius: 18px;
-                height: calc(100% - 28px);
-            }
-            .seat-left { padding-right: 4px; }
-            .seat-right { padding-left: 4px; }
-            .seat-bottom { gap: 6px; }
-            .player-tag { font-size: 9px; padding: 3px 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-            .player-hand { gap: 5px; min-height: 72px; }
-            .card { width: 48px; height: 68px; font-size: 11px; padding: 3px; border-radius: 6px; }
-            .card-center { font-size: 18px; }
-            .card-back { width: 48px !important; height: 68px !important; border-radius: 6px; }
-            .center-cards { gap: 10px; padding: 6px 10px; }
-            .pile-box { width: 50px; height: 70px; }
-            .count-badge { font-size: 9px; }
-            .status-msg { font-size: 9px; padding: 4px 8px; max-width: 95%; }
-        }
-        /* Kart Dağılma ve Alan Oyuncuya Uçma Animasyonları */
-        @keyframes dealCardAnim {
-            0% { opacity: 0; transform: translateY(-90px) scale(0.4) rotate(-12deg); }
-            100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
-        }
-        .card-deal-anim {
-            animation: dealCardAnim 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-        }
-        .flying-pile-card {
-            position: fixed;
-            z-index: 9999;
-            pointer-events: none;
-            transition: transform 0.85s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.85s ease-in;
-        }
-             
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>4 Kişilik Eşli Pişti - VIP Masa</title>
+<style>
+  :root {
+    --felt-light: #22734d; --felt-dark: #0d3321;
+    --gold: #f5c542; --gold-dim: rgba(245, 197, 66, 0.4);
+    --panel-bg: rgba(8, 22, 15, 0.85);
+  }
+  body {
+    margin: 0; padding: 12px; box-sizing: border-box;
+    background: radial-gradient(circle at center, #1b2420 0%, #090d0b 100%);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #f8f9fa; display: flex; align-items: center; justify-content: center;
+    height: 100vh; height: 100dvh; user-select: none; overflow: hidden;
+  }
+  .game-table {
+    width: 100%; max-width: 900px; height: 100%; max-height: 670px;
+    background: radial-gradient(circle at center, var(--felt-light) 0%, #14472f 65%, var(--felt-dark) 100%);
+    border: 10px solid #3d2314; border-radius: 38px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.85), inset 0 0 0 2px var(--gold-dim), inset 0 0 45px rgba(0,0,0,0.55);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between; padding: 12px 18px; box-sizing: border-box; position: relative;
+  }
+  .header {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px; box-sizing: border-box; background: var(--panel-bg);
+    border: 1px solid var(--gold-dim); border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4); flex-wrap: wrap; gap: 6px; z-index: 10;
+  }
+  .score-box { font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.06); border-left: 3px solid var(--gold); padding: 5px 10px; border-radius: 8px; }
+  .score-box span { color: var(--gold); font-size: 15px; font-weight: 700; }
+  .controls-bar { display: flex; align-items: center; gap: 5px; font-size: 12px; flex-wrap: wrap; }
+  select, .sound-btn { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--gold); font-weight: 600; background: rgba(245,197,66,0.15); color: var(--gold); cursor: pointer; font-size: 12px; }
+  select option { background: #0f3322; color: white; }
+  .deck-badge { background: rgba(0,0,0,0.4); padding: 4px 9px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.15); font-size: 12px; }
+  .status { font-size: 14px; color: #fff; font-weight: 600; text-align: center; background: rgba(0,0,0,0.5); padding: 5px 18px; border-radius: 20px; border: 1px solid var(--gold-dim); margin-top: 6px; z-index: 5; }
+  .pisti-alert { animation: pulse 0.5s ease-in-out 2; background: linear-gradient(45deg, #b71c1c, #d32f2f); color: var(--gold); border-color: var(--gold); font-size: 16px; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  .table-grid { display: grid; grid-template-columns: 110px 1fr 110px; grid-template-rows: 115px 1fr 130px; width: 100%; flex-grow: 1; align-items: center; justify-items: center; }
+  .seat-top { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; }
+  .seat-left { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; align-items: center; }
+  .seat-center { grid-column: 2; grid-row: 2; display: flex; align-items: center; justify-content: center; }
+  .seat-right { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; align-items: center; }
+  .seat-bottom { grid-column: 2; grid-row: 3; display: flex; flex-direction: column; align-items: center; }
+  .player-badge { font-size: 11px; color: #cbd5e1; background: rgba(0,0,0,0.5); padding: 3px 11px; border-radius: 12px; margin-bottom: 5px; font-weight: 600; border: 1px solid rgba(255,255,255,0.12); transition: all 0.25s; }
+  .player-badge.active-turn { color: #0f3322; background: var(--gold); border-color: #fff; box-shadow: 0 0 12px rgba(245,197,66,0.85); transform: scale(1.05); }
+  .hand { display: flex; gap: 8px; justify-content: center; align-items: center; min-height: 92px; }
+  .hand-side { display: flex; flex-direction: column; align-items: center; }
+  .center-ring { width: 155px; height: 140px; border-radius: 50%; border: 2px solid var(--gold-dim); background: rgba(0,0,0,0.18); box-shadow: inset 0 0 20px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; position: relative; }
+  .center-pile { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+  .pile-count { position: absolute; bottom: -24px; font-size: 11px; color: var(--gold); background: rgba(0,0,0,0.65); padding: 2px 9px; border-radius: 10px; white-space: nowrap; }
+  .card { width: 64px; height: 94px; background: linear-gradient(145deg, #fff 0%, #f1f3f5 100%); border-radius: 7px; border: 1px solid #d1d5db; box-shadow: 0 5px 12px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: space-between; padding: 4px 5px; box-sizing: border-box; font-size: 14px; font-weight: 800; position: relative; transition: transform 0.2s; }
+  .seat-bottom .card { cursor: pointer; width: 74px; height: 108px; font-size: 17px; }
+  .seat-bottom .card:hover { transform: translateY(-14px) scale(1.04); z-index: 20; }
+  .card.red { color: #c92a2a; } .card.black { color: #1e293b; }
+  .card.back { background: repeating-linear-gradient(45deg, #7f1d1d, #7f1d1d 6px, #991b1b 6px, #991b1b 12px); border: 2px solid #f8fafc; cursor: default; }
+  .card.back.side { width: 62px; height: 42px; margin-top: -26px; }
+  .card.back.side:first-child { margin-top: 0; }
+  .card-center { font-size: 24px; align-self: center; }
+  .card-bottom { align-self: flex-end; transform: rotate(180deg); }
+  .pile-card { position: absolute; transition: all 0.22s ease-out; }
+  .footer-controls { min-height: 36px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+  #action-btn { padding: 7px 20px; font-size: 13px; font-weight: 700; background: linear-gradient(180deg, #ffd866 0%, #e6b022 100%); color: #0f3322; border: 1px solid #fff; border-radius: 20px; cursor: pointer; display: none; }
+</style>
 </head>
 <body>
-    <div class="top-bar">
-        <a href="/" class="back-btn">← Salon</a>
-        <div class="scoreboard">
-            <div class="score-box" id="scoreLabel1">1. Taraf: <span id="t1Score">0</span></div>
-            <div class="score-box" id="scoreLabel2">2. Taraf: <span id="t2Score">0</span></div>
-            <div class="score-box" style="border-color:#fbbf24;">Hedef: <span id="targetDisplay">101</span></div>
-        </div>
+<div class="game-table">
+  <div class="header">
+    <div class="score-box">Bizim Takım: <span id="team1-total">0</span> <small>(El: <span id="team1-round">0</span>)</small></div>
+    <div class="controls-bar">
+      <select id="target-score" onchange="changeTarget()">
+        <option value="51">51 Puan</option>
+        <option value="101" selected>101 Puan</option>
+        <option value="151">151 Puan</option>
+      </select>
+      <select id="ai-level" onchange="changeAiLevel()">
+        <option value="normal">Zeka: Normal</option>
+        <option value="hard" selected>Zeka: Zor</option>
+      </select>
+      <select id="game-speed" onchange="changeSpeed()">
+        <option value="1100">Yavaş</option>
+        <option value="650" selected>Normal</option>
+        <option value="300">Hızlı</option>
+      </select>
+      <button class="sound-btn" id="sound-toggle" onclick="toggleSound()">🔊</button>
+      <span class="deck-badge">Deste: <b id="deck-count">52</b></span>
     </div>
-
-    <div class="table-grid">
-        <div class="seat-top">
-            <div class="player-tag" id="tagTop">Üst Oyuncu</div>
-            <div class="hand" id="handTop"></div>
-        </div>
-
-        <div class="seat-left" id="seatLeftBox">
-            <div class="player-tag" id="tagLeft">Sol Rakip</div>
-            <div class="side-hand" id="handLeft"></div>
-        </div>
-
-        <div class="center-table">
-            <div class="center-cards">
-                <div>
-                    <div class="card-back" style="width:68px; height:98px;"></div>
-                    <div class="count-badge" id="deckBadge">Deste: 44</div>
-                </div>
-                <div>
-                    <div class="pile-box" id="pileBox"></div>
-                    <div class="count-badge" id="pileBadge">Yerde: 4 Kart</div>
-                </div>
-            </div>
-            <div class="status-msg" id="statusMsg">Masa seçimi bekleniyor...</div>
-        </div>
-
-        <div class="seat-right" id="seatRightBox">
-            <div class="player-tag" id="tagRight">Sağ Rakip</div>
-            <div class="side-hand" id="handRight"></div>
-        </div>
-
-        <div class="seat-bottom">
-            <div class="player-tag" id="tagBottom">Siz</div>
-            <div class="hand player-hand" id="handBottom"></div>
-        </div>
-    </div>
-
-    <!-- Masa Seçim Lobisi -->
-    <div class="overlay" id="lobbyOverlay">
-        <div class="box">
-            <h2>🃏 Canlı Pişti Salonu</h2>
-            <div id="joinForm">
-                <input type="text" id="playerNameInput" placeholder="Takma adınızı yazın..." maxlength="14">
-                
-                <div style="text-align:left; font-size:12px; color:#94a3b8; margin:8px 0 4px;">Oyun Modu Seçin:</div>
-                <div style="display:flex; gap:8px; margin-bottom:10px;">
-                    <button type="button" class="btn" id="btnModeSolo" onclick="selectMode('solo')" style="margin:0; background:#334155; color:#fff;">👤 Tekli (2 Kişi)</button>
-                    <button type="button" class="btn" id="btnModeTeam" onclick="selectMode('team')" style="margin:0;">👥 Eşli (4 Kişi)</button>
-                </div>
-
-                <div style="text-align:left; font-size:12px; color:#94a3b8; margin:8px 0 4px;">Bitiş Puanı Seçin:</div>
-                <div style="display:flex; gap:8px; margin-bottom:14px;">
-                    <button type="button" class="btn" id="btnTarget51" onclick="selectTarget(51)" style="margin:0; background:#334155; color:#fff;">51</button>
-                    <button type="button" class="btn" id="btnTarget101" onclick="selectTarget(101)" style="margin:0;">101</button>
-                    <button type="button" class="btn" id="btnTarget151" onclick="selectTarget(151)" style="margin:0; background:#334155; color:#fff;">151</button>
-                </div>
-
-                <button class="btn" onclick="joinTable()">Masaya Otur</button>
-<button type="button" class="btn" onclick="joinTable(true)" style="background:#10b981; color:#fff;">+ Yeni Özel Masa Aç</button>
-<div id="activeRoomsBox" style="margin-top:12px; text-align:left; max-height:130px; overflow-y:auto; background:#0f172a; padding:8px; border-radius:8px; border:1px solid #334155; font-size:12px;">
-    <div style="color:#94a3b8; text-align:center;">Açık masalar yükleniyor...</div>
+    <div class="score-box">Rakip Takım: <span id="team2-total">0</span> <small>(El: <span id="team2-round">0</span>)</small></div>
+  </div>
+  <div class="status" id="status-text">1. El Başladı! Sıra Sizde.</div>
+  <div class="table-grid">
+    <div class="seat-top"><div class="player-badge" id="badge-2">Ortağınız</div><div class="hand" id="hand-2"></div></div>
+    <div class="seat-left"><div class="player-badge" id="badge-3">Rakip 2</div><div class="hand-side" id="hand-3"></div></div>
+    <div class="seat-center"><div class="center-ring"><div class="center-pile" id="center-pile"><div class="pile-count">Yerde: 0</div></div></div></div>
+    <div class="seat-right"><div class="player-badge" id="badge-1">Rakip 1</div><div class="hand-side" id="hand-1"></div></div>
+    <div class="seat-bottom"><div class="player-badge active-turn" id="badge-0">Siz</div><div class="hand" id="hand-0"></div></div>
+  </div>
+  <div class="footer-controls"><button id="action-btn" onclick="handleActionButton()">Sonraki Ele Geç</button></div>
 </div>
-            </div>
-            <div id="waitingArea" style="display:none;">
-                <div class="lobby-list" id="lobbyPlayersList"></div>
-                <button class="btn" onclick="socket.emit('fillPistiBots')">Botlarla Tamamla ve Başlat</button>
-            </div>
-        </div>
-    </div>
+<script>
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let soundEnabled = true;
 
-    <!-- El Arası ve Maç Sonu Ekranı -->
-    <div class="overlay" id="endOverlay" style="display:none;">
-        <div class="box">
-            <h2 id="endTitle">Tur Bitti!</h2>
-            <p id="endDetail" style="margin:15px 0; line-height:1.7;"></p>
-            <button class="btn" id="endBtn" onclick="location.reload()">Yeni Maç İçin Masaya Dön</button>
-        </div>
-    </div>
-    <script>
-        const socket = io();
-        let selectedMode = 'team';
-        let selectedTarget = 101;
-        let mySeatIndex = 0;
-
-        function selectMode(m) {
-            selectedMode = m;
-            document.getElementById('btnModeSolo').style.background = (m === 'solo') ? '#fbbf24' : '#334155';
-            document.getElementById('btnModeSolo').style.color = (m === 'solo') ? '#0f172a' : '#fff';
-            document.getElementById('btnModeTeam').style.background = (m === 'team') ? '#fbbf24' : '#334155';
-            document.getElementById('btnModeTeam').style.color = (m === 'team') ? '#0f172a' : '#fff';
-        }
-
-                function selectTarget(t) {
-            selectedTarget = t;
-            Array.of(51, 101, 151).forEach(val => {
-                const el = document.getElementById('btnTarget' + val);
-                el.style.background = (val === t) ? '#fbbf24' : '#334155';
-                el.style.color = (val === t) ? '#0f172a' : '#fff';
-            });
-        }
-
-        function joinTable(forceNew = false, roomId = null) {
-    const name = document.getElementById('playerNameInput').value.trim() || "Oyuncu";
-    document.getElementById('joinForm').style.display = 'none';
-    document.getElementById('waitingArea').style.display = 'block';
-    socket.emit('joinPisti', { name: name, mode: selectedMode, target: selectedTarget, forceNew: forceNew, roomId: roomId });
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-toggle').innerText = soundEnabled ? '🔊' : '🔇';
 }
 
-socket.on('pistiRoomsList', (rooms) => {
-    const box = document.getElementById('activeRoomsBox');
-    if (!box) return;
-    if (rooms.length === 0) {
-        box.innerHTML = '<div style="color:#94a3b8; text-align:center;">Şu an bekleyen masa yok, yukarıdan hemen masa açabilirsiniz.</div>';
-        return;
+function playSound(type) {
+  if (!soundEnabled) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  const now = audioCtx.currentTime;
+  if (type === 'play') {
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+    osc.start(now); osc.stop(now + 0.08);
+  } else if (type === 'capture') {
+    osc.type = 'sine'; osc.frequency.setValueAtTime(420, now); osc.frequency.setValueAtTime(620, now + 0.08);
+    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+    osc.start(now); osc.stop(now + 0.2);
+  } else if (type === 'pisti') {
+    osc.type = 'square'; osc.frequency.setValueAtTime(523, now);
+    osc.frequency.setValueAtTime(659, now + 0.1); osc.frequency.setValueAtTime(784, now + 0.2);
+    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+    osc.start(now); osc.stop(now + 0.4);
+  }
+}
+
+const suits = ['♠', '♣', '♥', '♦'];
+const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const playerNames = ['Siz', 'Rakip 1', 'Ortağınız', 'Rakip 2'];
+
+let deck = [], centerPile = [], seenCounts = {};
+let playerHands = { 0: [], 1: [], 2: [], 3: [] };
+let team1Collected = [], team2Collected = [], team1Pisti = 0, team2Pisti = 0;
+let team1Total = 0, team2Total = 0, targetScore = 101, botDelay = 650, aiDifficulty = 'hard', roundNumber = 1;
+let isMatchOver = false, lastCollectorTeam = null, currentTurn = 0, isBusy = false;
+function changeTarget() { targetScore = parseInt(document.getElementById('target-score').value); startNewMatch(); }
+function changeSpeed() { botDelay = parseInt(document.getElementById('game-speed').value); }
+function changeAiLevel() { aiDifficulty = document.getElementById('ai-level').value; }
+
+function createDeck() {
+  deck = []; seenCounts = {};
+  for (let v of values) seenCounts[v] = 0;
+  for (let s of suits) for (let v of values) deck.push({ suit: s, value: v });
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
+function startNewMatch() {
+  team1Total = 0; team2Total = 0; roundNumber = 1; isMatchOver = false;
+  startNewRound();
+}
+
+function startNewRound() {
+  createDeck();
+  playerHands = { 0: [], 1: [], 2: [], 3: [] }; centerPile = [];
+  team1Collected = []; team2Collected = []; team1Pisti = 0; team2Pisti = 0;
+  lastCollectorTeam = null; currentTurn = 0; isBusy = false;
+  document.getElementById('action-btn').style.display = 'none';
+  const st = document.getElementById('status-text');
+  st.classList.remove('pisti-alert');
+  st.innerText = `${roundNumber}. El Başladı! Sıra Sizde.`;
+  for (let i = 0; i < 4; i++) {
+    const c = deck.pop();
+    centerPile.push(c);
+    if (i === 3) seenCounts[c.value]++;
+  }
+  dealHands();
+  updateUI();
+}
+
+function dealHands() {
+  if (deck.length === 0) return;
+  for (let i = 0; i < 4; i++) {
+    for (let p = 0; p < 4; p++) playerHands[p].push(deck.pop());
+  }
+}
+
+function renderCard(card, isHidden = false, isSide = false) {
+  const div = document.createElement('div');
+  if (isHidden) { div.className = `card back ${isSide ? 'side' : ''}`; return div; }
+  const isRed = card.suit === '♥' || card.suit === '♦';
+  div.className = `card ${isRed ? 'red' : 'black'}`;
+  div.innerHTML = `<div>${card.value}${card.suit}</div><div class="card-center">${card.suit}</div><div class="card-bottom">${card.value}${card.suit}</div>`;
+  return div;
+}
+
+function updateUI() {
+  document.getElementById('deck-count').innerText = deck.length;
+  for (let p = 0; p < 4; p++) {
+    const badge = document.getElementById(`badge-${p}`);
+    if (badge) badge.classList.toggle('active-turn', currentTurn === p);
+    const hDiv = document.getElementById(`hand-${p}`);
+    hDiv.innerHTML = '';
+    playerHands[p].forEach((card, idx) => {
+      if (p === 0) {
+        const el = renderCard(card, false, false);
+        el.onclick = () => playHumanCard(idx);
+        hDiv.appendChild(el);
+      } else {
+        hDiv.appendChild(renderCard(null, true, p === 1 || p === 3));
+      }
+    });
+  }
+  const cDiv = document.getElementById('center-pile');
+  cDiv.innerHTML = `<div class="pile-count">Yerde: ${centerPile.length} kart</div>`;
+  const visibleCards = centerPile.slice(-3);
+  const startOffset = -(visibleCards.length - 1) * 11;
+  visibleCards.forEach((card, idx) => {
+    const isTop = idx === visibleCards.length - 1;
+    const isInitialHidden = (deck.length === 32 && centerPile.length === 4 && !isTop);
+    const cardEl = renderCard(card, isInitialHidden, false);
+    cardEl.classList.add('pile-card');
+    cardEl.style.transform = `translateX(${startOffset + idx * 22}px) rotate(${(idx - (visibleCards.length - 1) / 2) * 6}deg)`;
+    cardEl.style.zIndex = idx + 1;
+    cDiv.appendChild(cardEl);
+  });
+  updateScoreBoard(false);
+}
+
+function playHumanCard(idx) {
+  if (currentTurn !== 0 || isBusy) return;
+  isBusy = true;
+  const myHand = playerHands[0];
+  const playedCard = myHand.splice(idx, 1)[0];
+  processMove(playedCard, 0);
+  advanceTurn();
+}
+function chooseSmartCard(botIdx) {
+  const hand = playerHands[botIdx];
+  const top = centerPile.length > 0 ? centerPile[centerPile.length - 1] : null;
+  if (aiDifficulty === 'normal') {
+    if (top) {
+      const m = hand.findIndex(c => c.value === top.value);
+      const j = hand.findIndex(c => c.value === 'J');
+      if (m !== -1) return m;
+      if (j !== -1 && centerPile.length > 1) return j;
     }
-    box.innerHTML = '<strong style="color:#fbbf24;">Açık Masalar:</strong><br>' + rooms.map(r => {
-        const mText = r.mode === 'solo' ? 'Tekli' : 'Eşli';
-        const btn = r.active ? '<span style="color:#ef4444;">Oyunda</span>' : `<button onclick="joinTable(false, '${r.id}')" style="background:#38bdf8; color:#0f172a; border:none; border-radius:4px; padding:2px 8px; font-weight:bold; cursor:pointer;">Katıl</button>`;
-        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #1e293b;">
-            <span>${r.title} (${mText} - ${r.target}p) [${r.count}/${r.max}]</span>
-            ${btn}
-        </div>`;
-    }).join('');
-});
+    const nj = hand.findIndex(c => c.value !== 'J');
+    return nj !== -1 ? nj : 0;
+  }
+  const pilePoints = getCardPoints(centerPile) + (centerPile.length >= 4 ? 2 : 0);
+  if (top) {
+    const mIdx = hand.findIndex(c => c.value === top.value);
+    if (mIdx !== -1) return mIdx;
+    const jIdx = hand.findIndex(c => c.value === 'J');
+    if (jIdx !== -1 && (pilePoints >= 2 || centerPile.length >= 4 || (deck.length === 0 && hand.length === 1))) return jIdx;
+  }
+  let bestIdx = 0, bestSafety = -999;
+  hand.forEach((card, idx) => {
+    const inHandCount = hand.filter(c => c.value === card.value).length;
+    const totalKnown = (seenCounts[card.value] || 0) + inHandCount;
+    let safety = totalKnown * 10;
+    if (card.value === 'J') safety -= 50;
+    if ((card.suit === '♦' && card.value === '10') || (card.suit === '♣' && card.value === '2')) safety -= 15;
+    if (card.value === 'A') safety -= 5;
+    if (safety > bestSafety) { bestSafety = safety; bestIdx = idx; }
+  });
+  return bestIdx;
+}
 
-        socket.on('pistiLobbyUpdate', (data) => {
-            const modeText = data.mode === 'solo' ? 'Tekli (2 Kişi)' : 'Eşli (4 Kişi)';
-            const list = document.getElementById('lobbyPlayersList');
-            list.innerHTML = `<strong>${modeText} - ${data.target} Puan Masası (${data.players.length}/${data.maxPlayers}):</strong><br>` +
-                data.players.map((p, i) => `${i + 1}. Koltuk: ${p.name}`).join('<br>');
-        });
+function playBotTurn(botIdx) {
+  const hand = playerHands[botIdx];
+  if (!hand || hand.length === 0) return;
+  const chosen = chooseSmartCard(botIdx);
+  const playedCard = hand.splice(chosen, 1)[0];
+  processMove(playedCard, botIdx);
+  advanceTurn();
+}
 
-        socket.on('pistiBusy', (data) => {
-            alert(data.message);
-            location.reload();
-        });
+function advanceTurn() {
+  // Sağdan sola (saat yönünün tersine): 0 (Siz) -> 1 (Sağ: Rakip 1) -> 2 (Üst: Ortağınız) -> 3 (Sol: Rakip 2)
+  currentTurn = (currentTurn + 1) % 4;
+  updateUI();
+  const allEmpty = playerHands[0].length === 0 && playerHands[1].length === 0 && playerHands[2].length === 0 && playerHands[3].length === 0;
+  if (allEmpty) {
+    checkDeckEnd();
+  } else if (currentTurn !== 0) {
+    setTimeout(() => playBotTurn(currentTurn), botDelay);
+  } else {
+    isBusy = false;
+  }
+}
 
-        function renderCard(card, clickable, idx) {
-            const cls = card.isRed ? 'red' : 'black';
-            const attr = clickable ? `onclick="playCard(${idx})"` : '';
-            return `<div class="card ${cls}" ${attr}>
-                <div>${card.value}${card.suit}</div>
-                <div class="card-center">${card.suit}</div>
-                <div style="text-align:right; transform:rotate(180deg);">${card.value}${card.suit}</div>
-            </div>`;
-        }
+function processMove(card, playerIdx) {
+  seenCounts[card.value] = (seenCounts[card.value] || 0) + 1;
+  const top = centerPile.length > 0 ? centerPile[centerPile.length - 1] : null;
+  const team = (playerIdx === 0 || playerIdx === 2) ? 1 : 2;
+  let captured = false, isPisti = false;
 
-        function playCard(idx) {
-            socket.emit('playPistiCard', { cardIndex: idx });
-        }
+  if (top && (card.value === top.value || card.value === 'J')) {
+    captured = true;
+    if (centerPile.length === 1 && card.value === top.value) isPisti = true;
+  }
+  centerPile.push(card);
+  const st = document.getElementById('status-text');
+  st.classList.remove('pisti-alert');
 
-        socket.on('pistiState', (state) => {
-            document.getElementById('lobbyOverlay').style.display = 'none';
-                        if (state.eventInfo && state.eventInfo.type === 'capture') {
-                animateCaptureToPlayer(state.eventInfo.byIndex, state.myIndex, state.mode, state.eventInfo.card);
-            }
-            document.getElementById('endOverlay').style.display = 'none';
-            mySeatIndex = state.myIndex;
-            const isMyTurn = (state.turnIndex === mySeatIndex);
-
-            document.getElementById('targetDisplay').innerText = state.target;
-            document.getElementById('t1Score').innerText = state.totalScores.at(0);
-            document.getElementById('t2Score').innerText = state.totalScores.at(1);
-            document.getElementById('deckBadge').innerText = `Deste: ${state.deckCount}`;
-            document.getElementById('pileBadge').innerText = `Yerde: ${state.pileCount} Kart`;
-            document.getElementById('statusMsg').innerText = state.message;
-
-            document.getElementById('pileBox').innerHTML = state.topCard ? renderCard(state.topCard, false, 0) : '';
-            const isDeal = (state.eventInfo && state.eventInfo.type === 'deal');
-document.getElementById('handBottom').innerHTML = state.myHand.map((c, i) => {
-    let html = renderCard(c, isMyTurn, i);
-    if (isDeal) {
-        html = html.replace('class="card ', `style="animation-delay:${i * 0.12}s" class="card card-deal-anim `);
-    }
-    return html;
-}).join('');
-
-            const me = state.players[mySeatIndex];
-            const tagBottom = document.getElementById('tagBottom');
-            tagBottom.innerText = state.mode === 'solo' ? `${me.name}` : `${me.name} (Takım ${(mySeatIndex % 2) + 1})`;
-            tagBottom.className = 'player-tag' + (state.turnIndex === mySeatIndex ? ' active-turn' : '');
-
-                        if (state.mode === 'solo') {
-                document.getElementById('seatLeftBox').style.visibility = 'hidden';
-                document.getElementById('seatRightBox').style.visibility = 'hidden';
-                document.getElementById('scoreLabel1').innerHTML = `${state.players.at(0).name}: <span id="t1Score">${state.totalScores.at(0)}</span>`;
-                document.getElementById('scoreLabel2').innerHTML = `${state.players.at(1).name}: <span id="t2Score">${state.totalScores.at(1)}</span>`;
-
-                const oppIdx = (mySeatIndex + 1) % 2;
-                const opp = state.players[oppIdx];
-                const tagTop = document.getElementById('tagTop');
-                tagTop.innerText = `${opp.name} (${opp.cardCount})`;
-                tagTop.className = 'player-tag' + (state.turnIndex === oppIdx ? ' active-turn' : '');
-                document.getElementById('handTop').innerHTML = '';
-            } else {
-                document.getElementById('seatLeftBox').style.visibility = 'visible';
-                document.getElementById('seatRightBox').style.visibility = 'visible';
-                document.getElementById('scoreLabel1').innerHTML = `1. Takım (1-3): <span id="t1Score">${state.totalScores.at(0)}</span>`;
-                document.getElementById('scoreLabel2').innerHTML = `2. Takım (2-4): <span id="t2Score">${state.totalScores.at(1)}</span>`;
-
-                const seats = Array.of(
-                    { idx: (mySeatIndex + 1) % 4, tag: 'tagRight', hand: 'handRight' },
-                    { idx: (mySeatIndex + 2) % 4, tag: 'tagTop', hand: 'handTop' },
-                    { idx: (mySeatIndex + 3) % 4, tag: 'tagLeft', hand: 'handLeft' }
-                );
-                seats.forEach(s => {
-                    const pl = state.players[s.idx];
-                    const tagEl = document.getElementById(s.tag);
-                    tagEl.innerText = `${pl.name} (${pl.cardCount})`;
-                    tagEl.className = 'player-tag' + (state.turnIndex === s.idx ? ' active-turn' : '');
-                    document.getElementById(s.hand).innerHTML = '';
-                });
-            }
-        });
-
-        socket.on('pistiRoundSummary', (data) => {
-            document.getElementById('endTitle').innerText = '📊 El Sonu Puan Durumu';
-            document.getElementById('endDetail').innerHTML = `
-                <strong>Bu El Alınan Puanlar:</strong> +${data.roundPts.at(0)} / +${data.roundPts.at(1)}<br>
-                <strong>Toplam Skor:</strong> ${data.totalScores.at(0)} - ${data.totalScores.at(1)} (Hedef: ${data.target})<br>
-                <small style="color:#fbbf24;">Yeni el 3 saniye içinde otomatik başlıyor...</small>
-            `;
-            document.getElementById('endBtn').style.display = 'none';
-            document.getElementById('endOverlay').style.display = 'flex';
-        });
-
-        socket.on('pistiMatchOver', (res) => {
-            const mySide = res.mode === 'solo' ? (mySeatIndex + 1) : ((mySeatIndex % 2) + 1);
-            const iWon = (mySide === res.winnerSide);
-            document.getElementById('endTitle').innerText = iWon ? '🏆 TEBRİKLER, MAÇI KAZANDINIZ!' : '🏁 Maç Sona Erdi!';
-            document.getElementById('endDetail').innerHTML = `
-                <strong>${res.target} Puan Hedefine Ulaşıldı!</strong><br><br>
-                <strong>1. Taraf Toplam:</strong> ${res.totalScores.at(0)} Puan<br>
-                <strong>2. Taraf Toplam:</strong> ${res.totalScores.at(1)} Puan
-            `;
-            document.getElementById('endBtn').style.display = 'block';
-            document.getElementById('endOverlay').style.display = 'flex';
-        });
-
-        function animateCaptureToPlayer(winnerIdx, myIdx, mode, lastCard) {
-    const pileEl = document.getElementById('pileBox');
-    if (!pileEl) return;
-    const rect = pileEl.getBoundingClientRect();
-
-    let targetId = 'tagBottom';
-    if (mode === 'solo') {
-        targetId = (winnerIdx === myIdx) ? 'tagBottom' : 'tagTop';
+  if (captured) {
+    lastCollectorTeam = team;
+    if (team === 1) {
+      team1Collected.push(...centerPile);
+      if (isPisti) team1Pisti += (card.value === 'J' ? 20 : 10);
     } else {
-        const diff = (winnerIdx - myIdx + 4) % 4;
-        if (diff === 1) targetId = 'tagRight';
-        else if (diff === 2) targetId = 'tagTop';
-        else if (diff === 3) targetId = 'tagLeft';
+      team2Collected.push(...centerPile);
+      if (isPisti) team2Pisti += (card.value === 'J' ? 20 : 10);
     }
-
-    const targetEl = document.getElementById(targetId);
-    if (!targetEl) return;
-    const tRect = targetEl.getBoundingClientRect();
-
-    const flyCard = document.createElement('div');
-    flyCard.className = 'flying-pile-card';
-    flyCard.style.left = rect.left + 'px';
-    flyCard.style.top = rect.top + 'px';
-    flyCard.innerHTML = lastCard ? renderCard(lastCard, false, 0) : '<div class="card-back"></div>';
-    document.body.appendChild(flyCard);
-
-    const dx = (tRect.left + tRect.width / 2) - (rect.left + rect.width / 2);
-    const dy = (tRect.top + tRect.height / 2) - (rect.top + rect.height / 2);
-
-    requestAnimationFrame(() => {
-        flyCard.style.transform = `translate(${dx}px, ${dy}px) scale(0.35) rotate(18deg)`;
-flyCard.style.opacity = '0';
-});
-setTimeout(() => { flyCard.remove(); }, 900);
+    centerPile = [];
+    if (isPisti) {
+      playSound('pisti'); st.classList.add('pisti-alert');
+      st.innerText = `🔥 PİŞTİ! (${playerNames[playerIdx]}) 🔥`;
+    } else {
+      playSound('capture');
+      st.innerText = `${playerNames[playerIdx]} kartları topladı.`;
+    }
+  } else {
+    playSound('play');
+    const nextIdx = (playerIdx + 1) % 4;
+    st.innerText = nextIdx === 0 ? 'Sıra Sizde.' : `Sıra: ${playerNames[nextIdx]}`;
+  }
 }
-    </script>
+
+function checkDeckEnd() {
+  if (deck.length > 0) {
+    setTimeout(() => { dealHands(); isBusy = false; updateUI(); }, botDelay);
+  } else {
+    if (centerPile.length > 0 && lastCollectorTeam) {
+      if (lastCollectorTeam === 1) team1Collected.push(...centerPile);
+      else team2Collected.push(...centerPile);
+      centerPile = [];
+    }
+    updateUI();
+    finishRound();
+  }
+}
+
+function getCardPoints(cards) {
+  let pts = 0;
+  for (let c of cards) {
+    if (c.value === 'A' || c.value === 'J') pts += 1;
+    else if (c.suit === '♣' && c.value === '2') pts += 2;
+    else if (c.suit === '♦' && c.value === '10') pts += 3;
+  }
+  return pts;
+}
+
+function updateScoreBoard(isOver) {
+  let t1R = getCardPoints(team1Collected) + team1Pisti;
+  let t2R = getCardPoints(team2Collected) + team2Pisti;
+  if (isOver) {
+    if (team1Collected.length > team2Collected.length) t1R += 3;
+    else if (team2Collected.length > team1Collected.length) t2R += 3;
+  }
+  document.getElementById('team1-round').innerText = t1R;
+  document.getElementById('team2-round').innerText = t2R;
+  document.getElementById('team1-total').innerText = team1Total;
+  document.getElementById('team2-total').innerText = team2Total;
+  return { t1R, t2R };
+}
+
+function finishRound() {
+  const { t1R, t2R } = updateScoreBoard(true);
+  team1Total += t1R; team2Total += t2R;
+  document.getElementById('team1-total').innerText = team1Total;
+  document.getElementById('team2-total').innerText = team2Total;
+  const btn = document.getElementById('action-btn');
+
+  if ((team1Total >= targetScore || team2Total >= targetScore) && team1Total !== team2Total) {
+    isMatchOver = true;
+    const win = team1Total > team2Total ? 'Tebrikler, Takımınız Kazandı!' : 'Rakip Takım Kazandı!';
+    document.getElementById('status-text').innerText = `Maç Bitti! (${team1Total} - ${team2Total}) ${win}`;
+    btn.innerText = 'Yeni Maç Başlat'; btn.style.display = 'block';
+    return;
+  }
+  document.getElementById('status-text').innerText = `${roundNumber}. El Bitti! Biz: +${t1R}, Rakip: +${t2R}`;
+  btn.innerText = 'Sonraki Ele Geç'; btn.style.display = 'block';
+}
+
+function handleActionButton() {
+  if (isMatchOver) startNewMatch();
+  else { roundNumber++; startNewRound(); }
+}
+
+startNewMatch();
+</script>
 </body>
 </html>
